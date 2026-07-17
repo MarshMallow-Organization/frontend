@@ -133,6 +133,12 @@ export function RangeCalendar({
       </Box>
 
       <DateCalendar
+        // x-date-pickers reads `referenceDate` only to seed the visible month on
+        // mount; changing it later does NOT move the grid (useCalendarState keeps
+        // `currentMonth` in a reducer that no referenceDate change updates). Since
+        // the built-in header is hidden and navigation is driven entirely by the
+        // custom header, remount per-month so the new `referenceDate` takes effect.
+        key={`${displayMonth.getFullYear()}-${displayMonth.getMonth()}`}
         value={null}
         referenceDate={displayMonth}
         onChange={handleDayClick}
@@ -146,6 +152,16 @@ export function RangeCalendar({
         sx={{
           width: '100%',
           m: 0,
+          // Defeat MUI's fixed sizing tuned for 36px days: root is height:336 and
+          // the weeks area is minHeight:240 (= (36+4)*6) with overflow:hidden, so
+          // our 42px cells make a 6-week month (276px) clip the last row. Grow the
+          // weeks area to fit and let the root height follow its content.
+          height: 'auto',
+          '& .MuiDayCalendar-slideTransition': {
+            minHeight: 6 * 46, // 6 weeks × (42px cell + 4px row margin)
+            overflowY: 'visible',
+          },
+          '& .MuiDayCalendar-monthContainer': { overflow: 'visible' },
           '& .MuiDayCalendar-weekDayLabel': {
             color: color.calWeekday,
             width: 42,
