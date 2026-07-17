@@ -22,6 +22,7 @@ import { RangeCalendar } from '../components/RangeCalendar';
 import type { DateRange } from '../components/RangeCalendar';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonthOutlined';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import { SearchIcon, MicIcon, HomeIcon } from '../components/icons';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -116,6 +117,15 @@ export default function ComponentsPreview() {
         <Box sx={{ width: 320 }}>
           <SearchField appVariant="filled" searchIconSide="right" />
         </Box>
+      </Section>
+
+      <Section title="Icons — Figma 에셋 (돋보기 14:370 / 마이크 16:400 / 홈 90:881)">
+        <SearchIcon />
+        <SearchIcon fontSize="large" />
+        <MicIcon />
+        <MicIcon fontSize="large" />
+        <HomeIcon sx={{ fontSize: 48 }} />
+        <HomeIcon sx={{ fontSize: 74 }} />
       </Section>
 
       <Section title="Pagination — container (pag1)">

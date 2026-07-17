@@ -1,7 +1,7 @@
 import TextField, { type TextFieldProps } from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
-import SearchIcon from '@mui/icons-material/Search';
-import MicNoneIcon from '@mui/icons-material/MicNone';
+import { SearchIcon } from '../icons/SearchIcon';
+import { MicIcon } from '../icons/MicIcon';
 import { tokens } from '../../theme/tokens';
 
 const { color } = tokens;
@@ -41,7 +41,7 @@ export function SearchField({
   );
   const micAdornment = (
     <InputAdornment position="end">
-      <MicNoneIcon sx={{ color: color.selected }} fontSize="small" />
+      <MicIcon sx={{ color: color.selected }} fontSize="small" />
     </InputAdornment>
   );
 
