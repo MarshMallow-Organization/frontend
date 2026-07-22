@@ -1,0 +1,207 @@
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
+import { TextField } from '../components/TextField';
+import { Button } from '../components/Button';
+import { tokens } from '../theme/tokens';
+
+const { color } = tokens;
+
+// Form-pane background wash. Reproduces the Figma gradient blobs (92:662 —
+// cyan #4bdcff / lilac #b871ff / blue #4972ff / azure #4db7ff) as pure CSS
+// radial-gradients instead of blurred SVGs blended with hard-light. Vectors
+// render smooth at any scale (no rasterized-blur banding, no harsh blend).
+const FORM_PANE_BG = [
+  'radial-gradient(60% 56% at 104% 34%, rgba(75,220,255,0.40) 0%, rgba(75,220,255,0) 68%)',
+  'radial-gradient(54% 54% at 64% 64%, rgba(184,113,255,0.22) 0%, rgba(184,113,255,0) 66%)',
+  'radial-gradient(54% 54% at 38% 64%, rgba(73,114,255,0.20) 0%, rgba(73,114,255,0) 66%)',
+  'radial-gradient(52% 56% at 2% 74%, rgba(77,183,255,0.34) 0%, rgba(77,183,255,0) 68%)',
+].join(',');
+
+export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100svh',
+        boxSizing: 'border-box',
+        p: { xs: '3vh 4vw', md: '5.5vh 4.5vw' },
+        // decorative page gradient (92:662 reference)
+        background:
+          'linear-gradient(135deg, #eef6ff 0%, #f7f2ff 50%, #eafcff 100%)',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          width: '100%',
+          height: { xs: 'auto', md: '100%' },
+          minHeight: { md: '89svh' },
+          borderRadius: '40px',
+          overflow: 'hidden',
+          boxShadow: '0 24px 70px rgba(60, 80, 120, 0.18)',
+        }}
+      >
+        {/* left: form pane */}
+        <Box
+          sx={{
+            position: 'relative',
+            flex: '1 1 62%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(212,212,212,0.15)',
+            backgroundImage: FORM_PANE_BG,
+            py: { xs: 6, md: 0 },
+          }}
+        >
+          <Stack
+            component="form"
+            onSubmit={(e) => e.preventDefault()}
+            sx={{
+              position: 'relative',
+              width: 'min(100%, 625px)',
+              px: 4,
+              alignItems: 'center',
+              // Figma 92:624 rhythm is deliberately airy & uneven (not uniform).
+              gap: 0,
+            }}
+          >
+            <Typography
+              component="h1"
+              sx={{
+                mb: '98px', // title bottom → first field (92:645→646 exact)
+                fontSize: 'clamp(32px, 4.5vw, 55px)',
+                fontWeight: 500,
+                color: color.loginTitle,
+              }}
+            >
+              로그인
+            </Typography>
+
+            <Stack sx={{ width: '100%', gap: '17px' }}>
+              <TextField
+                appVariant="pill"
+                id="login-username"
+                label="이름"
+                fullWidth
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+              />
+              <TextField
+                appVariant="pill"
+                id="login-password"
+                label="비밀번호"
+                type="password"
+                fullWidth
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </Stack>
+
+            <Button
+              appVariant="filled"
+              type="submit"
+              fullWidth
+              sx={{
+                mt: '119px', // password field bottom → button (92:649→658 exact)
+                height: 63,
+                borderRadius: '50px',
+                fontSize: 30, // 92:660
+                fontWeight: 500,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+              }}
+            >
+              로그인
+            </Button>
+
+            <Stack
+              direction="row"
+              sx={{
+                mt: '22px', // button → links (Figma ~small)
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: 17,
+                color: color.loginLink,
+              }}
+            >
+              <Link
+                href="#"
+                underline="hover"
+                sx={{ color: 'inherit', fontSize: 17 }}
+              >
+                비밀번호 찾기
+              </Link>
+              <Box
+                component="span"
+                aria-hidden
+                sx={{ color: color.loginSeparator, fontSize: 13 }}
+              >
+                |
+              </Box>
+              <Link
+                href="#"
+                underline="hover"
+                sx={{ color: 'inherit', fontSize: 17 }}
+              >
+                아이디 찾기
+              </Link>
+              <Box
+                component="span"
+                aria-hidden
+                sx={{ color: color.loginSeparator, fontSize: 13 }}
+              >
+                |
+              </Box>
+              <Link
+                href="#"
+                underline="hover"
+                sx={{ color: 'inherit', fontSize: 17 }}
+              >
+                회원가입
+              </Link>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* right: brand pane */}
+        <Stack
+          sx={{
+            flex: '1 1 38%',
+            alignItems: 'center',
+            // Figma 92:634: brand block is bottom-anchored (logo/icon area above).
+            justifyContent: 'flex-end',
+            gap: '23px', // web site name → wordmark (92:635→671)
+            px: 'clamp(24px, 5vw, 64px)',
+            pb: 'clamp(48px, 9%, 88px)',
+            backgroundColor: color.white,
+          }}
+        >
+          <Typography sx={{ fontSize: 20, color: 'common.black' }}>
+            web site name
+          </Typography>
+          <Typography
+            sx={{
+              // Figma wordmark is 'Buffy' (renders as a bold serif); Buffy isn't
+              // bundled → bold-serif fallback matches the shape (placeholder brand).
+              fontFamily: "'Buffy', Georgia, 'Times New Roman', serif",
+              fontWeight: 700,
+              fontSize: 'clamp(28px, 3.2vw, 50px)', // 92:671 = 50px
+              color: color.loginWordmark,
+            }}
+          >
+            Marsh Mallow
+          </Typography>
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
