@@ -22,7 +22,7 @@ const FORM_PANE_BG = [
   "radial-gradient(52% 56% at 2% 74%, rgba(77,183,255,0.34) 0%, rgba(77,183,255,0) 68%)",
 ].join(",");
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, ""); //api.ts에  BASE_url에 export 안되있길래 그냥 만듬
 const GOOGLE_OAUTH_URL = `${API_BASE}/auth/google`;
 
 export default function LoginPage() {
