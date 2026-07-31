@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
+import MuiButton from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/Button';
 import { tokens } from '../theme/tokens';
+import googleLogo from '../assets/icons/google.svg';
 
 const { color } = tokens;
 
@@ -20,9 +22,16 @@ const FORM_PANE_BG = [
   'radial-gradient(52% 56% at 2% 74%, rgba(77,183,255,0.34) 0%, rgba(77,183,255,0) 68%)',
 ].join(',');
 
+const API_BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, ''); //api.ts에  BASE_URL에 export 안되있길래 그냥 만듬
+const GOOGLE_OAUTH_URL = `${API_BASE}/auth/google`;
+
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const handleGoogleLogin = () => {
+    window.location.href = GOOGLE_OAUTH_URL;
+  };
 
   return (
     <Box
@@ -88,12 +97,12 @@ export default function LoginPage() {
             <Stack sx={{ width: '100%', gap: '17px' }}>
               <TextField
                 appVariant="pill"
-                id="login-username"
-                label="이름"
+                id="login-email"
+                label="이메일"
                 fullWidth
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               />
               <TextField
                 appVariant="pill"
@@ -133,7 +142,7 @@ export default function LoginPage() {
                 color: color.loginLink,
               }}
             >
-              <Link
+              <Link //추후 href 교체
                 href="#"
                 underline="hover"
                 sx={{ color: 'inherit', fontSize: 17 }}
@@ -152,7 +161,7 @@ export default function LoginPage() {
                 underline="hover"
                 sx={{ color: 'inherit', fontSize: 17 }}
               >
-                아이디 찾기
+                이메일 찾기
               </Link>
               <Box
                 component="span"
@@ -169,6 +178,39 @@ export default function LoginPage() {
                 회원가입
               </Link>
             </Stack>
+
+            {/* 간편로그인 (782:4352) — 443×52, r80, 보더 #e6e6e6 */}
+            <MuiButton
+              type="button"
+              onClick={handleGoogleLogin}
+              disableElevation
+              sx={{
+                mt: '27px', // links → 간편로그인 (341:3855→782:4358)
+                position: 'relative',
+                width: 'min(100%, 443px)',
+                height: 52,
+                padding: 0,
+                borderRadius: '80px',
+                border: `1px solid ${color.loginOauthBorder}`,
+                backgroundColor: color.white,
+                color: color.loginOauthText,
+                fontSize: 15, // 782:4360
+                fontWeight: 500,
+                '&:hover': { backgroundColor: color.bg },
+              }}
+            >
+              <img
+                src={googleLogo}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  left: 24,
+                  width: 25,
+                  height: 26,
+                }}
+              />
+              Google로 로그인
+            </MuiButton>
           </Stack>
         </Box>
 

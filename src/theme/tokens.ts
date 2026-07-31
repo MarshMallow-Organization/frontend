@@ -48,6 +48,9 @@ export const tokens = {
     loginLink: '#a9a9a9', // footer links (92:652)
     loginSeparator: '#f4f4f4', // link separator |
     loginWordmark: '#42576c', // Marsh Mallow brand wordmark (92:671)
+    //login screen added(07/29)
+    loginOauthBorder: '#e6e6e6', // 간편로그인 버튼 보더 (782:4358)
+    loginOauthText: '#8b8b8b', // "Google로 로그인" 라벨 (782:4360)
     // precision-qa deep-audit corrections
     calBorder: '#d9d9d9', // RangeCalendar container border (17:888)
     chipFilledGrayBg: 'rgba(200,209,215,0.62)', // filled gray tag bg (58:1066)
