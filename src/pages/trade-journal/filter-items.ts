@@ -13,10 +13,6 @@ export function filterJournalItems(
   filter: JournalFilter,
 ): TradeJournalItem[] {
   return items.filter((item) => {
-    if (item.diaryStatus === 'PENDING' && !item.buyDiary && !item.sellDiary) {
-
-    }
-
     const traded = parseISO(item.tradedAt);
 
     if (filter.viewMode === 'date' && filter.rangeStart) {
