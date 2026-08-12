@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import LoginPage from './pages/login';
-import ComponentsPreview from './pages/components-preview';
-import ComponentsVerify from './pages/components-verify';
+import LoginPage from './pages/login/LoginPage';
+import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
+import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
 
 function App() {
   // Dev-only routes: /#preview = component gallery, /#verify=<key> = isolated
