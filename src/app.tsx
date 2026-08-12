@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import LoginPage from './pages/login/LoginPage';
 import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
 import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
+import NewsPage from './pages/news/NewsPage';
 
 function App() {
   // Dev-only routes: /#preview = component gallery, /#verify=<key> = isolated
@@ -21,6 +22,7 @@ function App() {
       />
     );
   }
+  if (window.location.pathname.startsWith('/news')) return <NewsPage />;
   return <LoginPage />;
 }
 
