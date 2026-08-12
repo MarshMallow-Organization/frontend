@@ -4,10 +4,10 @@ import MuiButton from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
-import { TextField } from '../components/TextField';
-import { Button } from '../components/Button';
-import { tokens } from '../theme/tokens';
-import googleLogo from '../assets/icons/google.svg';
+import { TextField } from '../../components/TextField';
+import { Button } from '../../components/Button';
+import { tokens } from '../../theme/tokens';
+import googleLogo from '../../assets/icons/google.svg';
 
 const { color } = tokens;
 
