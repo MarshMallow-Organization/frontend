@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import LoginPage from './pages/login/LoginPage';
 import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
 import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
+import TradeJournalPage from './pages/trade-journal/TradeJournalPage';
 
 function App() {
-  // Dev-only routes: /#preview = component gallery, /#verify=<key> = isolated
-  // single component for matched-scale drift verification (see figma-verify).
   const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
     const onChange = () => setHash(window.location.hash);
@@ -14,6 +13,7 @@ function App() {
   }, []);
 
   if (hash === '#preview') return <ComponentsPreview />;
+  if (hash === '#journal') return <TradeJournalPage />;
   if (hash.startsWith('#verify=')) {
     return (
       <ComponentsVerify
