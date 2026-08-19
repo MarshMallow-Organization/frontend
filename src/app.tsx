@@ -5,6 +5,8 @@ import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
 import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
 import NewsPage from './pages/news/NewsPage';
 import TradeJournalPage from './pages/trade-journal/TradeJournalPage';
+import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
+import { GOOGLE_CALLBACK_PATH } from './lib/googleAuth';
 
 function App() {
   const [location, setLocation] = useState(() => ({
@@ -38,6 +40,11 @@ function App() {
       />
     );
   }
+  /* 구글 로그인용 임시 라우트*/
+  if (location.pathname === GOOGLE_CALLBACK_PATH) {
+    return <GoogleCallbackPage />;
+  }
+
   /**
    * AI/개발자 주의: 아래 pathname 분기는 정식 라우터 도입 전 임시 라우트다.
    * 경로를 바꿀 때는 AppShell의 NAV_TABS와 navigation.ts를 함께 확인하고,
