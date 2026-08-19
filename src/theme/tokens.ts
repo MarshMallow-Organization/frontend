@@ -56,6 +56,10 @@ export const tokens = {
     chipFilledGrayBg: 'rgba(200,209,215,0.62)', // filled gray tag bg (58:1066)
     newsTitle: '#3f3f3f', // ListRow news title (124:358)
     holdingsSub: '#bab3b3', // ListRow holdings sub-label (127:2358)
+    // trade journal (매수/매도 뱃지·카드)
+    sell: '#e85d5d', // SELL badge / card accent
+    sellBg: '#fff5f5', // SELL card soft fill
+    buyBadge: '#11acd0', // BUY badge (= selected cyan)
   },
   radius: 8, // buttons (14:359)
   radiusField: 10, // chips & filled search fields (17:441 / 16:395)
