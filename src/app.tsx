@@ -5,6 +5,9 @@ import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
 import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
 import NewsPage from './pages/news/NewsPage';
 import TradeJournalPage from './pages/trade-journal/TradeJournalPage';
+import HomePage from './pages/home/HomePage';
+import AccountPage from './pages/account/AccountPage';
+import StockDetailPage from './pages/stock/StockDetailPage';
 
 function App() {
   const [location, setLocation] = useState(() => ({
@@ -31,6 +34,9 @@ function App() {
   }, []);
 
   if (location.hash === '#preview') return <ComponentsPreview />;
+  if (location.hash === '#home') return <HomePage />;
+  if (location.hash === '#account') return <AccountPage />;
+  if (location.hash === '#stock') return <StockDetailPage />;
   if (location.hash.startsWith('#verify=')) {
     return (
       <ComponentsVerify
