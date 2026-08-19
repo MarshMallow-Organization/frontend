@@ -7,6 +7,7 @@ import Link from '@mui/material/Link';
 import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
 import { tokens } from '../../theme/tokens';
+import { navigate } from '../../lib/navigation';
 import googleLogo from '../../assets/icons/google.svg';
 
 const { color } = tokens;
@@ -72,7 +73,11 @@ export default function LoginPage() {
         >
           <Stack
             component="form"
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              // TODO: 실제 로그인 API 연동 전까지는 제출 시 홈으로 이동만 한다.
+              navigate('/home');
+            }}
             sx={{
               position: 'relative',
               width: 'min(100%, 625px)',

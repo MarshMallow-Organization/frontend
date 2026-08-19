@@ -34,9 +34,6 @@ function App() {
   }, []);
 
   if (location.hash === '#preview') return <ComponentsPreview />;
-  if (location.hash === '#home') return <HomePage />;
-  if (location.hash === '#account') return <AccountPage />;
-  if (location.hash === '#stock') return <StockDetailPage />;
   if (location.hash.startsWith('#verify=')) {
     return (
       <ComponentsVerify
@@ -57,6 +54,17 @@ function App() {
     return <TradeJournalPage />;
   }
   if (location.pathname.startsWith('/news')) return <NewsPage />;
+  // AppShell 홈 버튼(navigate('/home'))·내 계좌 탭(navigate('/account'))의 실제
+  // 도착지. #home/#account/#stock 해시는 이전 주소 alias로 남겨둔다.
+  if (location.pathname === '/home' || location.hash === '#home') {
+    return <HomePage />;
+  }
+  if (location.pathname === '/account' || location.hash === '#account') {
+    return <AccountPage />;
+  }
+  if (location.pathname === '/stock' || location.hash === '#stock') {
+    return <StockDetailPage />;
+  }
   return <LoginPage />;
 }
 
