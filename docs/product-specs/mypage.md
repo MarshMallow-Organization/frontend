@@ -1,4 +1,4 @@
-# 마이페이지 개발 가이드
+# 마이페이지 제품·개발 가이드
 
 > 이 문서는 마이페이지를 구현하는 사람과 AI 에이전트가 공통 레이아웃을 중복 개발하지 않도록 작업 경계를 정의한다.  
 > 현재 단계에서는 설계 기준만 기록하며, 마이페이지 UI 구현은 시작하지 않는다.
@@ -7,7 +7,7 @@
 
 - 공통 최상위 레이아웃: `src/components/AppShell/AppShell.tsx`
 - AppShell 사용법: `src/components/AppShell/README.md`
-- 올바른 적용 예시: `src/pages/trade-journal/TradeJournalPage.tsx`
+- 올바른 적용 예시: `src/pages/trade-journal/TradeJournalPage.tsx`, `src/pages/news/NewsPage.tsx`
 - 공통 디자인 토큰: `src/theme/tokens.ts`
 - 공통 컴포넌트 목록: `src/components/README.md`
 - 임시 라우팅 진입점: `src/app.tsx`
@@ -116,11 +116,10 @@ src/pages/my-page/
 
 ## 6. 현재 코드에서 주의할 점
 
-- `TradeJournalPage`는 `AppShell`을 사용하는 기준 예시다.
-- `NewsPage`는 자체 헤더와 외부 패널을 포함하고 있어 현재 공통 AppShell 기준을 따르지 않는다. 마이페이지 구현 시 `NewsPage`의 최상위 구조를 복사하지 않는다.
+- `TradeJournalPage`와 `NewsPage`는 모두 `AppShell`을 사용하는 현재 기준 예시다.
 - AppShell의 인기종목 탭은 `/news/popular`, 매매일지 탭은 `/journal`에 연결되어 있다. 아직 실제 페이지가 없는 관심종목과 내 계좌 탭은 비활성 상태다.
 - AppShell의 상단 검색창과 메뉴 버튼 동작은 아직 미구현이다.
-- AppShell의 아바타는 현재 고정 문자 `U`를 표시한다.
+- AppShell의 아바타는 현재 `PersonRoundedIcon`만 표시하며 마이페이지 이동 동작은 없다.
 - 사용자 정보 모델, 인증 사용자 조회 방식, 프로필 수정 API는 아직 이 문서에서 확정하지 않는다.
 - API 명세가 없는 값을 추측해 영구 타입이나 요청 코드를 만들지 않는다. 목업을 사용한다면 목업임을 파일과 코드에서 명확히 표시한다.
 
@@ -157,4 +156,4 @@ src/pages/my-page/
 4. 마이페이지에서는 공통 패널 안쪽 콘텐츠만 구현한다.
 5. 불명확한 디자인, API 또는 라우팅 정책을 임의로 확정하지 않는다.
 6. AppShell 변경이 필요하면 페이지 작업과 구분해 변경 이유와 다른 페이지 영향도를 먼저 확인한다.
-7. 뉴스 페이지의 자체 헤더 구조를 마이페이지의 기준으로 사용하지 않는다.
+7. 뉴스 페이지의 패널 내부 UI만 참고하고 공통 헤더는 항상 `AppShell`에서 재사용한다.
