@@ -11,6 +11,35 @@ export const FAVORITE_COMPANIES: FavoriteCompany[] = [
   { id: '009151', name: '삼성전기' },
 ];
 
+export interface StockEvent {
+  id: string;
+  /** yyyy-MM-dd */
+  date: string;
+  label: string;
+  corpName?: string;
+}
+
+// 목업: 주요 일정(실적 발표, 배당락 등) API 연동 전 임시 데이터. 홈 캘린더 마킹/상세 표시용.
+export const STOCK_EVENTS: StockEvent[] = [
+  {
+    id: 'ev1',
+    date: '2026-07-30',
+    label: '2분기 실적 발표',
+    corpName: '삼성전자',
+  },
+  {
+    id: 'ev2',
+    date: '2026-07-31',
+    label: 'FOMC 정례회의 결과 발표',
+  },
+  {
+    id: 'ev3',
+    date: '2026-08-05',
+    label: '배당락일',
+    corpName: 'SK하이닉스',
+  },
+];
+
 export const NEWS_ITEMS: NewsItem[] = [
   {
     id: 'n1',

@@ -1,16 +1,31 @@
+import { useCallback, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { setMonth, setYear } from 'date-fns';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import { PickerDay, type PickerDayProps } from '@mui/x-date-pickers/PickerDay';
+import {
+  addMonths,
+  format,
+  isSameDay,
+  parseISO,
+  setMonth,
+  setYear,
+  startOfDay,
+  startOfMonth,
+} from 'date-fns';
 import { BaseCard } from '../../../components/BaseCard';
 import { Select } from '../../../components/Select';
 import { INITIAL_JOURNAL_ITEMS } from '../../trade-journal/mock-data';
 import { formatTradeDateTime } from '../../trade-journal/filter-items';
+import { STOCK_EVENTS } from '../mock-data';
 import { tokens } from '../../../theme/tokens';
 
 const { color } = tokens;
+
+const DAY_SIZE = 32;
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
   label: `${i + 1}월`,
@@ -20,47 +35,55 @@ const YEARS = Array.from({ length: 11 }, (_, i) => {
   const y = 2020 + i;
   return { label: String(y), value: y };
 });
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-const recentJournal = [...INITIAL_JOURNAL_ITEMS]
-  .sort((a, b) => (a.tradedAt < b.tradedAt ? 1 : -1))
-  .slice(0, 3);
 
 export interface CalendarCardProps {
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 }
 
 /**
- * Home 화면 좌측 — 월 이동 캘린더 + 매매일지 미리보기.
- * 매매일지 미리보기는 이미 구현된 trade-journal mock 데이터를 그대로 재사용한다.
+ * Home 화면 좌측 — 월 이동 캘린더 + 선택한 날짜의 주요 일정/매매기록.
+ * 매매일지 페이지의 캘린더 구조(DateCalendar + 커스텀 day 슬롯, 마킹 점)를 그대로 가져와
+ * 홈에서는 구간이 아닌 단일 날짜 선택으로 단순화했다.
  */
 export function CalendarCard({
   currentMonth,
   onMonthChange,
+  selectedDate,
+  onSelectDate,
 }: CalendarCardProps) {
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const today = currentMonth.getDate();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstWeekday = new Date(year, month, 1).getDay();
-
-  const weeks: (number | null)[][] = [];
-  let week: (number | null)[] = Array.from(
-    { length: firstWeekday },
-    () => null,
+  const markedDates = useMemo(
+    () => [
+      ...INITIAL_JOURNAL_ITEMS.map((i) => startOfDay(parseISO(i.tradedAt))),
+      ...STOCK_EVENTS.map((e) => startOfDay(parseISO(e.date))),
+    ],
+    [],
   );
-  for (let day = 1; day <= daysInMonth; day++) {
-    week.push(day);
-    if (week.length === 7) {
-      weeks.push(week);
-      week = [];
-    }
-  }
-  if (week.length) {
-    while (week.length < 7) week.push(null);
-    weeks.push(week);
-  }
+
+  const dayTrades = useMemo(
+    () =>
+      INITIAL_JOURNAL_ITEMS.filter((i) =>
+        isSameDay(parseISO(i.tradedAt), selectedDate),
+      ),
+    [selectedDate],
+  );
+  const dayEvents = useMemo(
+    () => STOCK_EVENTS.filter((e) => isSameDay(parseISO(e.date), selectedDate)),
+    [selectedDate],
+  );
+
+  const renderDay = useCallback(
+    (dayProps: PickerDayProps) => (
+      <HomeCalendarDay
+        {...dayProps}
+        selectedDate={selectedDate}
+        markedDates={markedDates}
+      />
+    ),
+    [selectedDate, markedDates],
+  );
 
   return (
     <BaseCard sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -68,13 +91,13 @@ export function CalendarCard({
         <IconButton
           size="small"
           aria-label="이전 달"
-          onClick={() => onMonthChange(new Date(year, month - 1, today))}
+          onClick={() => onMonthChange(addMonths(currentMonth, -1))}
         >
           <ChevronLeftIcon fontSize="small" />
         </IconButton>
         <Select
           options={MONTHS}
-          value={month}
+          value={currentMonth.getMonth()}
           onChange={(e) =>
             onMonthChange(setMonth(currentMonth, e.target.value as number))
           }
@@ -82,7 +105,7 @@ export function CalendarCard({
         />
         <Select
           options={YEARS}
-          value={year}
+          value={currentMonth.getFullYear()}
           onChange={(e) =>
             onMonthChange(setYear(currentMonth, e.target.value as number))
           }
@@ -91,65 +114,41 @@ export function CalendarCard({
         <IconButton
           size="small"
           aria-label="다음 달"
-          onClick={() => onMonthChange(new Date(year, month + 1, today))}
+          onClick={() => onMonthChange(addMonths(currentMonth, 1))}
         >
           <ChevronRightIcon fontSize="small" />
         </IconButton>
       </Box>
 
-      <Box>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            mb: 0.5,
-          }}
-        >
-          {WEEKDAYS.map((d) => (
-            <Typography
-              key={d}
-              sx={{
-                textAlign: 'center',
-                fontSize: '0.6875rem',
-                color: color.calWeekday,
-              }}
-            >
-              {d}
-            </Typography>
-          ))}
-        </Box>
-        {weeks.map((w, i) => (
-          <Box
-            key={i}
-            sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}
-          >
-            {w.map((day, j) => (
-              <Box
-                key={j}
-                sx={{ display: 'grid', placeItems: 'center', py: 0.5 }}
-              >
-                {day && (
-                  <Box
-                    sx={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontSize: '0.75rem',
-                      color: day === today ? color.white : color.calText,
-                      backgroundColor:
-                        day === today ? color.selected : 'transparent',
-                    }}
-                  >
-                    {day}
-                  </Box>
-                )}
-              </Box>
-            ))}
-          </Box>
-        ))}
-      </Box>
+      <DateCalendar
+        key={`${currentMonth.getFullYear()}-${currentMonth.getMonth()}`}
+        value={null}
+        referenceDate={currentMonth}
+        onChange={(day) => day && onSelectDate(startOfDay(day))}
+        onMonthChange={(m) => onMonthChange(startOfMonth(m))}
+        showDaysOutsideCurrentMonth
+        views={['day']}
+        dayOfWeekFormatter={(date) => format(date, 'EEEEEE')}
+        slots={{ day: renderDay, calendarHeader: () => null }}
+        sx={{
+          width: '100%',
+          m: 0,
+          height: 'auto',
+          '& .MuiDayCalendar-slideTransition': {
+            minHeight: 6 * (DAY_SIZE + 4),
+            overflowY: 'visible',
+          },
+          '& .MuiDayCalendar-monthContainer': { overflow: 'visible' },
+          '& .MuiDayCalendar-weekDayLabel': {
+            color: color.calWeekday,
+            width: DAY_SIZE,
+            fontSize: '0.6875rem',
+          },
+          '& .MuiDayCalendar-header, & .MuiDayCalendar-weekContainer': {
+            justifyContent: 'space-between',
+          },
+        }}
+      />
 
       <Box
         sx={{
@@ -163,9 +162,59 @@ export function CalendarCard({
         <Typography
           sx={{ fontSize: '0.875rem', fontWeight: 700, color: color.text }}
         >
-          매매일지 미리보기
+          {format(selectedDate, 'M월 d일')} 일정 · 매매기록
         </Typography>
-        {recentJournal.map((item) => (
+
+        {dayEvents.length === 0 && dayTrades.length === 0 && (
+          <Typography
+            sx={{ fontSize: '0.8125rem', color: color.textSecondary, py: 1 }}
+          >
+            이 날의 주요 일정이나 매매기록이 없어요.
+          </Typography>
+        )}
+
+        {dayEvents.map((event) => (
+          <Box
+            key={event.id}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1,
+              borderRadius: '12px',
+            }}
+          >
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                flexShrink: 0,
+                backgroundColor: color.selectedBg,
+              }}
+            />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{ fontSize: '0.6875rem', color: color.textSecondary }}
+              >
+                주요 일정{event.corpName ? ` · ${event.corpName}` : ''}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '0.8125rem',
+                  color: color.ink,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {event.label}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+
+        {dayTrades.map((item) => (
           <Box
             key={item.id}
             component="a"
@@ -213,6 +262,65 @@ export function CalendarCard({
         ))}
       </Box>
     </BaseCard>
+  );
+}
+
+function HomeCalendarDay({
+  selectedDate,
+  markedDates = [],
+  day,
+  outsideCurrentMonth,
+  sx,
+  ...props
+}: PickerDayProps & {
+  selectedDate?: Date;
+  markedDates?: Date[];
+}) {
+  const isSelected = !!selectedDate && isSameDay(day, selectedDate);
+  const isMarked =
+    !outsideCurrentMonth && markedDates.some((d) => isSameDay(d, day));
+
+  return (
+    <PickerDay
+      {...props}
+      day={day}
+      outsideCurrentMonth={outsideCurrentMonth}
+      disableRipple
+      sx={{
+        width: DAY_SIZE,
+        height: DAY_SIZE,
+        margin: 0,
+        fontSize: '0.75rem',
+        borderRadius: '50%',
+        color: outsideCurrentMonth ? color.calDisabled : color.calText,
+        position: 'relative',
+        '&:hover': { backgroundColor: color.calHover },
+        ...(isSelected && {
+          backgroundColor: color.selected,
+          color: color.white,
+          '&:hover': { backgroundColor: color.selected },
+          '&.Mui-selected': {
+            backgroundColor: color.selected,
+            color: color.white,
+          },
+        }),
+        ...(isMarked &&
+          !isSelected && {
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: 3,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              backgroundColor: color.selected,
+            },
+          }),
+        ...sx,
+      }}
+    />
   );
 }
 

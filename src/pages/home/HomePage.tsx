@@ -20,6 +20,7 @@ const HOME_NAV = 'home' as unknown as AppShellNav;
  */
 export default function HomePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date(2026, 6, 30));
+  const [selectedDate, setSelectedDate] = useState(new Date(2026, 6, 30));
   const [companySearch, setCompanySearch] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState(
     FAVORITE_COMPANIES[0].id,
@@ -67,6 +68,8 @@ export default function HomePage() {
         <CalendarCard
           currentMonth={currentMonth}
           onMonthChange={setCurrentMonth}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
         />
 
         <Box
