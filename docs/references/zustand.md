@@ -230,10 +230,6 @@ state.todos[0].completed = true;
 ```ts
 import { apiFetch } from '../lib/api';
 
-interface ApiResponse<T> {
-  data: T;
-}
-
 interface User {
   id: number;
   name: string;
@@ -255,8 +251,7 @@ export const useUserStore = create<UserState>()((set) => ({
     set({ isLoading: true, error: null });
 
     try {
-      // 현재 apiFetch는 응답을 자동으로 unwrap하지 않으므로 data를 꺼낸다.
-      const { data: user } = await apiFetch<ApiResponse<User>>(`/users/${id}`);
+      const user = await apiFetch<User>(`/users/${id}`);
       set({ user, isLoading: false });
     } catch (error) {
       set({

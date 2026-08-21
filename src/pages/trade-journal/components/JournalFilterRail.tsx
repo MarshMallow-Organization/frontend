@@ -84,7 +84,10 @@ export function JournalFilterRail({
           label="날짜별 조회"
           icon={<CalendarMonthOutlinedIcon fontSize="inherit" />}
           selected={viewMode === 'date'}
-          onClick={() => onViewModeChange('date')}
+          onClick={() => {
+            if (viewMode === 'date') onDateRangeChange([null, null]);
+            onViewModeChange('date');
+          }}
           sx={{
             width: '100%',
             height: rail.tabHeight,

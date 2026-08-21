@@ -110,7 +110,7 @@ export function JournalCard({ item, selected, onSelect }: JournalCardProps) {
         <Box component="span" sx={{ color: '#a8a8a8' }}>
           평균 단가
         </Box>
-        {`  ${formatPrice(item.price)}   |   ${item.amount}주`}
+        {`  ${item.price != null ? formatPrice(item.price) : '-'}   |   ${item.amount}주`}
       </Typography>
 
       <Box

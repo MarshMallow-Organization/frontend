@@ -8,9 +8,9 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import { Button } from '../../../components/Button';
 import type {
-  BuyDiary,
+  EmotionScore,
   GoalEvaluationCode,
-  SellDiary,
+  GoalHoldPeriod,
   SellReasonCode,
   TradeJournalItem,
   TradeType,
@@ -36,12 +36,35 @@ const BUY_ACCENT = '#11acd0';
 const SELL_ACCENT = '#2e9b4f';
 const CARD_BG = '#f5f7f9';
 const INPUT_BORDER = '#d7d7d7';
+const MAX_BUY_REASON = 300;
+const MAX_CUSTOM_HOLD_PERIOD = 255;
+const MAX_SELL_DETAIL = 191;
+const MAX_MEMO = 300;
 
 export type JournalWritePayload = {
-  tradeId: number;
-  buyDiary?: Omit<BuyDiary, 'id'> & { id?: number };
-  sellDiary?: Omit<SellDiary, 'id'> & { id?: number };
-};
+  orderId: number;
+  diaryId?: number;
+  date: string;
+} & (
+  | {
+      type: 'BUY';
+      emotion: EmotionScore;
+      buyReason: string;
+      goalPrice?: number;
+      goalHoldPeriod: GoalHoldPeriod;
+      customGoalHoldPeriod?: string;
+      memo?: string;
+    }
+  | {
+      type: 'SELL';
+      emotion: EmotionScore;
+      sellReasonCode: SellReasonCode;
+      sellReasonDetail?: string;
+      goalEvaluationCode?: GoalEvaluationCode;
+      goalEvaluationDetail?: string;
+      memo?: string;
+    }
+);
 
 export interface JournalWriteDialogProps {
   open: boolean;
@@ -49,6 +72,11 @@ export interface JournalWriteDialogProps {
   mode: 'create' | 'edit';
   onClose: () => void;
   onSave: (payload: JournalWritePayload) => void;
+  saving?: boolean;
+  error?: string | null;
+  onAutoFill?: () => void;
+  autoFillLoading?: boolean;
+  reloadVersion?: number;
   onTradeTypeChange?: (type: TradeType) => void;
 }
 
@@ -59,6 +87,11 @@ export function JournalWriteDialog({
   mode,
   onClose,
   onSave,
+  saving = false,
+  error,
+  onAutoFill,
+  autoFillLoading = false,
+  reloadVersion = 0,
   onTradeTypeChange,
 }: JournalWriteDialogProps) {
   if (!item) return null;
@@ -109,9 +142,13 @@ export function JournalWriteDialog({
         </Box>
 
         <WriteForm
-          key={`${item.id}-${mode}-${String(open)}`}
+          key={`${item.id}-${mode}-${String(open)}-${reloadVersion}`}
           item={item}
           onSave={onSave}
+          saving={saving}
+          error={error}
+          onAutoFill={onAutoFill}
+          autoFillLoading={autoFillLoading}
           onTradeTypeChange={onTradeTypeChange}
         />
       </DialogContent>
@@ -122,10 +159,18 @@ export function JournalWriteDialog({
 function WriteForm({
   item,
   onSave,
+  saving,
+  error,
+  onAutoFill,
+  autoFillLoading,
   onTradeTypeChange,
 }: {
   item: TradeJournalItem;
   onSave: (payload: JournalWritePayload) => void;
+  saving: boolean;
+  error?: string | null;
+  onAutoFill?: () => void;
+  autoFillLoading: boolean;
   onTradeTypeChange?: (type: TradeType) => void;
 }) {
   const isBuy = item.tradeType === 'BUY';
@@ -133,26 +178,18 @@ function WriteForm({
   const buy = item.buyDiary;
   const sell = item.sellDiary;
 
-  const holdPreset =
-    buy?.goalHoldPeriod &&
-    HOLD_PERIOD_OPTIONS.some((o) => o.value === buy.goalHoldPeriod)
-      ? buy.goalHoldPeriod
-      : buy?.goalHoldPeriod
-        ? HOLD_PERIOD_OPTIONS[3].value
-        : HOLD_PERIOD_OPTIONS[1].value;
+  const holdPreset = buy?.goalHoldPeriod ?? 'MID_TERM';
 
-  const [diaryBody, setDiaryBody] = useState(buy?.diaryBody ?? '');
-  const [goalStock, setGoalStock] = useState(
-    buy?.goalStock != null ? String(buy.goalStock) : '',
+  const [buyReason, setBuyReason] = useState(buy?.buyReason ?? '');
+  const [goalPrice, setGoalPrice] = useState(
+    buy?.goalPrice != null ? String(buy.goalPrice) : '',
   );
-  const [goalHoldPeriod, setGoalHoldPeriod] = useState(holdPreset);
+  const [goalHoldPeriod, setGoalHoldPeriod] =
+    useState<GoalHoldPeriod>(holdPreset);
   const [holdOtherText, setHoldOtherText] = useState(
-    buy?.goalHoldPeriod &&
-      !HOLD_PERIOD_OPTIONS.some((o) => o.value === buy.goalHoldPeriod)
-      ? buy.goalHoldPeriod
-      : '',
+    buy?.customGoalHoldPeriod ?? '',
   );
-  const [emotion, setEmotion] = useState<number | undefined>(
+  const [emotion, setEmotion] = useState<EmotionScore | undefined>(
     buy?.emotion ?? sell?.emotion,
   );
   const [memo, setMemo] = useState(buy?.memo ?? '');
@@ -169,50 +206,62 @@ function WriteForm({
   const [goalEvalDetail, setGoalEvalDetail] = useState(
     sell?.goalEvaluationDetail ?? '',
   );
-  const [retrospectiveMemo, setRetrospectiveMemo] = useState(
-    sell?.retrospectiveMemo ?? '',
-  );
+  const [sellMemo, setSellMemo] = useState(sell?.memo ?? '');
 
-  const isHoldOther = goalHoldPeriod === HOLD_PERIOD_OPTIONS[3].value;
+  const isHoldOther = goalHoldPeriod === 'CUSTOM';
+  const normalizedGoalPrice = goalPrice.replace(/,/g, '').trim();
+  const parsedGoalPrice =
+    normalizedGoalPrice.length > 0 ? Number(normalizedGoalPrice) : undefined;
+  const goalPriceValid =
+    normalizedGoalPrice.length === 0 ||
+    (/^\d+(?:\.\d{1,2})?$/.test(normalizedGoalPrice) &&
+      parsedGoalPrice !== undefined &&
+      parsedGoalPrice > 0);
 
   const buyValid =
-    diaryBody.trim().length > 0 &&
-    (!isHoldOther || holdOtherText.trim().length > 0);
+    buyReason.trim().length > 0 &&
+    buyReason.length <= MAX_BUY_REASON &&
+    Boolean(emotion) &&
+    goalPriceValid &&
+    memo.length <= MAX_MEMO &&
+    (!isHoldOther ||
+      (holdOtherText.trim().length > 0 &&
+        holdOtherText.length <= MAX_CUSTOM_HOLD_PERIOD));
   const sellValid =
     Boolean(sellReasonCode) &&
-    (sellReasonCode !== 'OTHER' || sellReasonDetail.trim().length > 0);
+    Boolean(emotion) &&
+    sellReasonDetail.length <= MAX_SELL_DETAIL &&
+    goalEvalDetail.length <= MAX_SELL_DETAIL &&
+    sellMemo.length <= MAX_MEMO;
   const canSave = isBuy ? buyValid : sellValid;
 
   function handleSave() {
-    if (!canSave) return;
+    if (!canSave || !emotion) return;
     if (item.tradeType === 'BUY') {
       onSave({
-        tradeId: item.id,
-        buyDiary: {
-          id: buy?.id,
-          tradeId: item.id,
-          diaryBody: diaryBody.trim(),
-          goalStock: goalStock
-            ? Number(goalStock.replace(/,/g, ''))
-            : undefined,
-          goalHoldPeriod: isHoldOther ? holdOtherText.trim() : goalHoldPeriod,
-          emotion,
-          memo: memo.trim() || undefined,
-        },
+        orderId: item.orderId,
+        diaryId: item.diaryId,
+        date: item.diaryDate,
+        type: 'BUY',
+        buyReason: buyReason.trim(),
+        goalPrice: parsedGoalPrice,
+        goalHoldPeriod,
+        customGoalHoldPeriod: isHoldOther ? holdOtherText.trim() : undefined,
+        emotion,
+        memo: memo.trim() || undefined,
       });
     } else {
       onSave({
-        tradeId: item.id,
-        sellDiary: {
-          id: sell?.id,
-          tradeId: item.id,
-          sellReasonCode: sellReasonCode!,
-          sellReasonDetail: sellReasonDetail.trim() || undefined,
-          goalEvaluationCode: goalEvalCode,
-          goalEvaluationDetail: goalEvalDetail.trim() || undefined,
-          emotion,
-          retrospectiveMemo: retrospectiveMemo.trim() || undefined,
-        },
+        orderId: item.orderId,
+        diaryId: item.diaryId,
+        date: item.diaryDate,
+        type: 'SELL',
+        sellReasonCode: sellReasonCode!,
+        sellReasonDetail: sellReasonDetail.trim() || undefined,
+        goalEvaluationCode: goalEvalCode,
+        goalEvaluationDetail: goalEvalDetail.trim() || undefined,
+        emotion,
+        memo: sellMemo.trim() || undefined,
       });
     }
   }
@@ -255,10 +304,17 @@ function WriteForm({
                   />
                   <Field
                     label={isBuy ? '매수가' : '매도가'}
-                    value={formatPrice(item.price)}
+                    value={item.price != null ? formatPrice(item.price) : '-'}
                   />
                   <Field label="수량" value={`${item.amount}주`} />
-                  <Field label="총 금액" value={formatPrice(item.totalPrice)} />
+                  <Field
+                    label="총 금액"
+                    value={
+                      item.totalPrice != null
+                        ? formatPrice(item.totalPrice)
+                        : '-'
+                    }
+                  />
                 </Box>
               </InfoCard>
             }
@@ -336,10 +392,11 @@ function WriteForm({
                 accent={accent}
                 body={
                   <MultilineInput
-                    value={diaryBody}
-                    onChange={setDiaryBody}
+                    value={buyReason}
+                    onChange={setBuyReason}
                     placeholder="자유롭게 작성해주세요."
                     minHeight={111}
+                    maxLength={MAX_BUY_REASON}
                   />
                 }
               />
@@ -365,17 +422,19 @@ function WriteForm({
                       </Typography>
                       <Box
                         component="input"
-                        value={goalStock}
+                        value={goalPrice}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setGoalStock(e.target.value)
+                          setGoalPrice(e.target.value)
                         }
-                        placeholder="예 : 90,000원"
+                        placeholder="예: 90,000"
+                        inputMode="decimal"
+                        aria-invalid={!goalPriceValid}
                         sx={{
                           width: 347,
                           maxWidth: '100%',
                           height: 44,
                           borderRadius: '8px',
-                          border: `1px solid ${INPUT_BORDER}`,
+                          border: `1px solid ${goalPriceValid ? INPUT_BORDER : '#e5484d'}`,
                           backgroundColor: color.white,
                           px: '20px',
                           fontSize: '0.875rem',
@@ -386,6 +445,14 @@ function WriteForm({
                           '&:focus': { borderColor: accent },
                         }}
                       />
+                      {!goalPriceValid ? (
+                        <Typography
+                          role="alert"
+                          sx={{ mt: 0.75, fontSize: '12px', color: '#c92a2a' }}
+                        >
+                          0보다 큰 숫자를 소수점 둘째 자리까지 입력해주세요.
+                        </Typography>
+                      ) : null}
                     </InfoCard>
                     <InfoCard sx={{ flex: 1, height: 160, p: '20px 28px' }}>
                       <Typography
@@ -419,6 +486,7 @@ function WriteForm({
                         <Box
                           component="input"
                           value={holdOtherText}
+                          maxLength={MAX_CUSTOM_HOLD_PERIOD}
                           onChange={(e: ChangeEvent<HTMLInputElement>) =>
                             setHoldOtherText(e.target.value)
                           }
@@ -448,6 +516,7 @@ function WriteForm({
               <Section
                 n={5}
                 title="지금 감정"
+                required
                 accent={accent}
                 body={<EmotionPicker value={emotion} onChange={setEmotion} />}
               />
@@ -462,6 +531,7 @@ function WriteForm({
                     onChange={setMemo}
                     placeholder="기타 메모를 자유롭게 작성해주세요."
                     minHeight={111}
+                    maxLength={MAX_MEMO}
                   />
                 }
               />
@@ -594,6 +664,7 @@ function WriteForm({
                       placeholder="기타 이유를 입력해주세요."
                       minHeight={56}
                       singleLine={sellReasonCode !== 'OTHER'}
+                      maxLength={MAX_SELL_DETAIL}
                     />
                   </Stack>
                 }
@@ -602,6 +673,7 @@ function WriteForm({
               <Section
                 n={5}
                 title="지금 감정"
+                required
                 accent={accent}
                 body={<EmotionPicker value={emotion} onChange={setEmotion} />}
               />
@@ -635,6 +707,7 @@ function WriteForm({
                       onChange={setGoalEvalDetail}
                       placeholder="기타 의견을 입력해주세요."
                       minHeight={56}
+                      maxLength={MAX_SELL_DETAIL}
                     />
                   </Stack>
                 }
@@ -646,10 +719,11 @@ function WriteForm({
                 accent={accent}
                 body={
                   <MultilineInput
-                    value={retrospectiveMemo}
-                    onChange={setRetrospectiveMemo}
+                    value={sellMemo}
+                    onChange={setSellMemo}
                     placeholder="이번 거래에서 배운 점이나 느낀 점을 작성해주세요."
                     minHeight={140}
+                    maxLength={MAX_MEMO}
                   />
                 }
               />
@@ -669,10 +743,19 @@ function WriteForm({
           borderTop: `1px solid ${color.border}`,
         }}
       >
+        {error ? (
+          <Typography
+            role="alert"
+            sx={{ mr: 'auto', alignSelf: 'center', color: '#c92a2a' }}
+          >
+            {error}
+          </Typography>
+        ) : null}
         <Button
           type="button"
-          disabled
-          aria-label="자동 채우기 (API 연결 전)"
+          disabled={!onAutoFill || autoFillLoading || saving}
+          onClick={onAutoFill}
+          aria-label="서버에 저장된 정보 다시 불러오기"
           sx={{
             width: write.saveW,
             height: write.saveH,
@@ -687,13 +770,13 @@ function WriteForm({
             },
           }}
         >
-          자동 채우기
+          {autoFillLoading ? '불러오는 중…' : '자동 채우기'}
         </Button>
 
         <Box
           component="button"
           type="button"
-          disabled={!canSave}
+          disabled={!canSave || saving}
           onClick={handleSave}
           sx={{
             width: write.saveW,
@@ -703,19 +786,20 @@ function WriteForm({
             fontFamily,
             fontSize: '0.9375rem',
             fontWeight: 700,
-            cursor: canSave ? 'pointer' : 'not-allowed',
-            backgroundColor: canSave ? accent : '#c8c8c8',
+            cursor: canSave && !saving ? 'pointer' : 'not-allowed',
+            backgroundColor: canSave && !saving ? accent : '#c8c8c8',
             color: color.white,
             '&:hover': {
-              backgroundColor: canSave
-                ? isBuy
-                  ? '#0e9bb8'
-                  : '#278a45'
-                : '#c8c8c8',
+              backgroundColor:
+                canSave && !saving
+                  ? isBuy
+                    ? '#0e9bb8'
+                    : '#278a45'
+                  : '#c8c8c8',
             },
           }}
         >
-          일기 저장하기
+          {saving ? '저장 중…' : '일기 저장하기'}
         </Box>
       </Box>
     </>
@@ -903,12 +987,14 @@ function MultilineInput({
   placeholder,
   minHeight = 111,
   singleLine,
+  maxLength,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   minHeight?: number;
   singleLine?: boolean;
+  maxLength?: number;
 }) {
   return (
     <Box
@@ -918,6 +1004,7 @@ function MultilineInput({
         onChange(e.target.value)
       }
       placeholder={placeholder}
+      maxLength={maxLength}
       sx={{
         width: '100%',
         minHeight,

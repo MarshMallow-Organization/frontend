@@ -1,7 +1,7 @@
 # Backend API Contract
 
-> 상태: active-with-known-gap  
-> 최종 확인: 2026-08-19  
+> 상태: active
+> 최종 확인: 2026-08-21
 > 근거: `../backend/src/docs/common-response.md`, `../backend/src/docs/swagger-api.md`, `../backend/src/domains/domain.md`, `src/lib/api.ts`
 
 API 구현 전에는 실행 중인 백엔드의 Swagger UI(`/swagger`) 또는 OpenAPI JSON(`/swagger-json`)과 관련 DTO를 확인한다. 이 문서는 공통 규칙의 요약이며 실제 Swagger가 최종 계약이다.
@@ -42,9 +42,9 @@ export type ApiErrorResponse = {
 - 인증이 확정되면 쿠키/토큰 처리는 공통 API 계층에 둔다.
 - 서버 DTO와 화면 모델이 다르면 명시적 변환 함수를 둔다.
 
-## 현재 알려진 간극
+## 공통 래퍼 동작
 
-현재 `src/lib/api.ts`는 HTTP 성공 body를 그대로 반환하며 `{ data: T }`를 자동으로 풀지 않는다. 오류에서도 `status`와 생성한 메시지만 보존하고 서버의 `code`, `message`, `traceId`를 보존하지 않는다. 이 동작을 개선하기 전까지 호출부는 실제 응답 형태를 확인해야 하며, 개선 작업은 [`../exec-plans/tech-debt.md`](../exec-plans/tech-debt.md)에 추적한다.
+`src/lib/api.ts`는 정상 응답의 `{ data: T }`를 풀어서 `T`를 반환한다. 오류에서는 HTTP `status`와 서버의 `code`, `message`, `traceId`를 `ApiError`에 보존한다. `204`, 비 JSON 응답, 잘못된 JSON, 요청 취소, 네트워크 단절도 공통 계층에서 구분한다.
 
 ## 페이지네이션·필터 공통 기준
 
@@ -55,6 +55,17 @@ export type ApiErrorResponse = {
 - 빈 결과는 빈 `items`와 0인 합계/페이지 정보를 사용
 
 화면이 1부터 표시되면 API 경계에서 0-based 값으로 변환한다. 도메인마다 계약이 다르면 Swagger가 우선한다.
+
+## Diaries 화면 연결
+
+- 작성된 일기는 `/diaries`의 모든 페이지를 조회한다.
+- 작성 가능한 체결 주문은 `/trades`의 모든 페이지에서 고유 `ordersId`를 모으고, 이미 일기가 있는 `orderId`를 제외해 구성한다.
+- 목록 항목을 선택하면 작성된 일기는 `/diaries/:diaryId`, 미작성 주문은 `/diaries/prefill?orderId=`로 상세 정보를 채운다.
+- 작성 다이얼로그의 자동 채우기는 저장 전 서버 값을 복원하는 동작이다. 수정 중에는 `/diaries/prefill`의 거래 정보와 `/diaries/:diaryId`의 저장된 작성 내용을 함께 다시 받아 폼을 초기화한다.
+- 생성·수정·삭제는 각각 `POST /diaries`, `PATCH /diaries/:diaryId`, `DELETE /diaries/:diaryId`를 사용한다.
+- 서버에 회사·날짜 facet API가 없으므로 현재 화면 필터는 모두 조회한 결과에 적용한다.
+
+BUY 상세 응답에는 현재 `customGoalHoldPeriod`가 누락되어 있다. 프런트 타입은 필드를 선택적으로 수용하지만, 기존 CUSTOM 일기의 직접 입력값을 안정적으로 수정하려면 백엔드 상세 DTO와 매핑 보완이 필요하다.
 
 ## 도메인 지도
 

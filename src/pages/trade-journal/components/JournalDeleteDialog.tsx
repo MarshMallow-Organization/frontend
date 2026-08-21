@@ -14,6 +14,7 @@ export interface JournalDeleteDialogProps {
   open: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  loading?: boolean;
 }
 
 /** Figma 632:2754 — 450×230, radius 20, 삭제(red) / 취소(outline) **/
@@ -21,6 +22,7 @@ export function JournalDeleteDialog({
   open,
   onConfirm,
   onCancel,
+  loading = false,
 }: JournalDeleteDialogProps) {
   return (
     <Dialog
@@ -97,6 +99,7 @@ export function JournalDeleteDialog({
             component="button"
             type="button"
             onClick={onConfirm}
+            disabled={loading}
             sx={{
               width: 140,
               height: 40,
@@ -107,16 +110,18 @@ export function JournalDeleteDialog({
               fontFamily,
               fontSize: '0.9375rem',
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
               '&:hover': { backgroundColor: '#e64444' },
             }}
           >
-            삭제
+            {loading ? '삭제 중…' : '삭제'}
           </Box>
           <Box
             component="button"
             type="button"
             onClick={onCancel}
+            disabled={loading}
             sx={{
               width: 140,
               height: 40,
@@ -127,7 +132,7 @@ export function JournalDeleteDialog({
               fontFamily,
               fontSize: '0.9375rem',
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
               '&:hover': { backgroundColor: '#f7f7f7' },
             }}
           >

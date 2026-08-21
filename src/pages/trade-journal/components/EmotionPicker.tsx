@@ -20,15 +20,15 @@ const OPTIONS: {
   label: string;
   Icon: SvgIconComponent;
 }[] = [
-  { value: 5, label: '완전 좋음', Icon: SentimentVerySatisfiedIcon },
-  { value: 4, label: '좋음', Icon: SentimentSatisfiedAltIcon },
+  { value: 1, label: '완전 좋음', Icon: SentimentVerySatisfiedIcon },
+  { value: 2, label: '좋음', Icon: SentimentSatisfiedAltIcon },
   { value: 3, label: '그냥', Icon: SentimentNeutralIcon },
-  { value: 2, label: '안좋음', Icon: SentimentDissatisfiedIcon },
-  { value: 1, label: '최악', Icon: SentimentVeryDissatisfiedIcon },
+  { value: 4, label: '안좋음', Icon: SentimentDissatisfiedIcon },
+  { value: 5, label: '최악', Icon: SentimentVeryDissatisfiedIcon },
 ];
 
 export interface EmotionPickerProps {
-  value?: number;
+  value?: MoodValue;
   onChange: (v: MoodValue) => void;
 }
 

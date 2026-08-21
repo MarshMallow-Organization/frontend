@@ -1,4 +1,6 @@
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { JournalCard } from './JournalCard';
@@ -14,6 +16,9 @@ export interface JournalCardListProps {
   selectedId: number | null;
   onSelect: (id: number) => void;
   listTitle: string;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export function JournalCardList({
@@ -21,6 +26,9 @@ export function JournalCardList({
   selectedId,
   onSelect,
   listTitle,
+  loading = false,
+  error,
+  onRetry,
 }: JournalCardListProps) {
   return (
     <Box
@@ -59,7 +67,33 @@ export function JournalCardList({
           pb: 2,
         }}
       >
-        {items.length === 0 ? (
+        {loading && items.length === 0 ? (
+          <Box sx={{ display: 'grid', placeItems: 'center', py: 6 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : error ? (
+          <Alert
+            severity="error"
+            action={
+              onRetry ? (
+                <Box
+                  component="button"
+                  type="button"
+                  onClick={onRetry}
+                  sx={{
+                    border: 0,
+                    background: 'transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  다시 시도
+                </Box>
+              ) : undefined
+            }
+          >
+            {error}
+          </Alert>
+        ) : items.length === 0 ? (
           <Typography
             sx={{ color: color.mutedGray, mt: 3, fontSize: '0.875rem' }}
           >
