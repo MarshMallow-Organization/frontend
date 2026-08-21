@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
+import { Button } from '../../../components/Button';
 import type {
   BuyDiary,
   GoalEvaluationCode,
@@ -663,10 +664,32 @@ function WriteForm({
           py: 2,
           display: 'flex',
           justifyContent: 'flex-end',
+          gap: '12px',
           flexShrink: 0,
           borderTop: `1px solid ${color.border}`,
         }}
       >
+        <Button
+          type="button"
+          disabled
+          aria-label="자동 채우기 (API 연결 전)"
+          sx={{
+            width: write.saveW,
+            height: write.saveH,
+            minWidth: 0,
+            borderRadius: '16px',
+            p: 0,
+            fontSize: '0.9375rem',
+            fontWeight: 700,
+            '&.Mui-disabled': {
+              backgroundColor: '#d1d6db',
+              color: color.white,
+            },
+          }}
+        >
+          자동 채우기
+        </Button>
+
         <Box
           component="button"
           type="button"
