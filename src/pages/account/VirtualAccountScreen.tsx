@@ -40,7 +40,6 @@ function FolderTreemap({
       {holdings.map((h, i) => (
         <Box
           key={h.id}
-          onClick={() => onHide(h.name)}
           sx={{
             flex: weights[i],
             minWidth: 90,
@@ -50,7 +49,6 @@ function FolderTreemap({
             flexDirection: 'column',
             justifyContent: 'flex-end',
             p: 2,
-            cursor: 'pointer',
             transition: 'filter 0.15s',
             '&:hover': { filter: 'brightness(0.97)' },
             '&:hover .treemap-hide': { opacity: 1 },
@@ -99,6 +97,7 @@ function FolderTreemap({
             className="treemap-hide"
             appVariant="outlineGray"
             label="숨기기"
+            onClick={() => onHide(h.name)}
             sx={{
               height: 26,
               fontSize: '0.6875rem',
@@ -107,6 +106,8 @@ function FolderTreemap({
               backgroundColor: color.white,
               opacity: i === 0 ? 1 : 0,
               transition: 'opacity 0.15s',
+              cursor: 'pointer',
+              '&:focus-visible': { opacity: 1 },
             }}
           />
         </Box>
