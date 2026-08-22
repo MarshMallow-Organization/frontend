@@ -93,6 +93,14 @@ export default function AccountPage() {
   }
 
   const subTab = subTabTransition.displayed;
+  const hiddenNames = new Set(hiddenStocks.map((s) => s.name));
+  const visibleHoldings = HOLDING_STOCKS.filter(
+    (h) => !hiddenNames.has(h.name),
+  );
+  const visibleFolders = folders.map((f) => ({
+    ...f,
+    holdings: f.holdings.filter((h) => !hiddenNames.has(h.name)),
+  }));
 
   return (
     <AppShell activeNav="account">
@@ -117,13 +125,13 @@ export default function AccountPage() {
         >
           {subTab === '자산 현황' && (
             <AssetStatusScreen
-              holdings={HOLDING_STOCKS}
+              holdings={visibleHoldings}
               onHide={handleStartHide}
             />
           )}
           {subTab === '가상 계좌' && (
             <VirtualAccountScreen
-              folders={folders}
+              folders={visibleFolders}
               selectedFolderId={selectedFolderId}
               onSelectFolder={setSelectedFolderId}
               onOpenFolderModal={() => setShowFolderModal(true)}
