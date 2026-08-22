@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
+import { format } from 'date-fns';
 import { AppShell } from '../../components/AppShell';
 import { AccountSidebar } from '../../components/AccountSidebar';
 import { FolderModal } from '../../components/FolderModal';
@@ -65,7 +66,7 @@ export default function AccountPage() {
         {
           id: `hs-${Date.now()}`,
           name: pendingHideTarget,
-          hiddenDate: new Date().toISOString().slice(0, 10),
+          hiddenDate: format(new Date(), 'yyyy-MM-dd'),
           remainingDays: DEFAULT_HIDE_DURATION_DAYS,
         },
       ]);
