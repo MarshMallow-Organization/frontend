@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
+import ButtonBase from '@mui/material/ButtonBase';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -27,6 +28,7 @@ import {
   tradesToPendingJournalItems,
 } from '../../../features/diaries/mappers';
 import type { TradeJournalItem } from '../../../features/diaries/types';
+import { navigate } from '../../../lib/navigation';
 import { formatTradeDateTime } from '../../trade-journal/filter-items';
 import { STOCK_EVENTS } from '../mock-data';
 import { tokens } from '../../../theme/tokens';
@@ -243,17 +245,18 @@ export function CalendarCard({
         ))}
 
         {dayTrades.map((item) => (
-          <Box
+          <ButtonBase
             key={item.id}
-            component="a"
-            href="#journal"
+            onClick={() => navigate('/journal')}
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 1.5,
               p: 1,
               borderRadius: '12px',
-              textDecoration: 'none',
+              width: '100%',
+              justifyContent: 'flex-start',
+              textAlign: 'left',
               '&:hover': { backgroundColor: color.bg },
             }}
           >
@@ -286,7 +289,7 @@ export function CalendarCard({
                 일지
               </Typography>
             </Box>
-          </Box>
+          </ButtonBase>
         ))}
       </Box>
     </BaseCard>
