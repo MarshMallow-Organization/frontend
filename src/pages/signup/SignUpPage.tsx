@@ -237,7 +237,9 @@ export default function SignUpPage() {
 
             <Stack
               component="form"
-              onSubmit={handleSubmit}
+              onSubmit={(event) => {
+                void handleSubmit(event);
+              }}
               noValidate
               sx={{ width: '100%', alignItems: 'center' }}
             >
