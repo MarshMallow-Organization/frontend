@@ -46,13 +46,14 @@ export function JournalFilterRail({
 
   const filteredCompanies = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return companies;
     return companies.filter(
       (c) =>
-        c.corpName.toLowerCase().includes(q) ||
-        c.corpCode.toLowerCase().includes(q),
+        c.corpCode !== selectedCorpCode &&
+        (!q ||
+          c.corpName.toLowerCase().includes(q) ||
+          c.corpCode.toLowerCase().includes(q)),
     );
-  }, [companies, query]);
+  }, [companies, query, selectedCorpCode]);
 
   return (
     <Box
@@ -83,7 +84,10 @@ export function JournalFilterRail({
           label="날짜별 조회"
           icon={<CalendarMonthOutlinedIcon fontSize="inherit" />}
           selected={viewMode === 'date'}
-          onClick={() => onViewModeChange('date')}
+          onClick={() => {
+            if (viewMode === 'date') onDateRangeChange([null, null]);
+            onViewModeChange('date');
+          }}
           sx={{
             width: '100%',
             height: rail.tabHeight,
@@ -262,13 +266,12 @@ export function JournalFilterRail({
             }}
           >
             {filteredCompanies.map((c) => {
-              const selected = selectedCorpCode === c.corpCode;
               return (
                 <Box
                   key={c.corpCode}
                   component="button"
                   type="button"
-                  onClick={() => onCorpChange(selected ? null : c.corpCode)}
+                  onClick={() => onCorpChange(c.corpCode)}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',

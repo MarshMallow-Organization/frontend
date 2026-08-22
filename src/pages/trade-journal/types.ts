@@ -1,69 +1,26 @@
-export type TradeType = 'BUY' | 'SELL';
-export type DiaryStatus = 'PENDING' | 'COMPLETED';
+import type {
+  DiaryType,
+  GoalEvaluationCode,
+  GoalHoldPeriod,
+  SellReasonCode,
+} from '../../features/diaries/types';
 
-export type SellReasonCode =
-  'GOAL_REACHED' | 'STOP_LOSS' | 'REBALANCING' | 'PROFIT_TAKING' | 'OTHER';
+export type {
+  BuyDiary,
+  DiaryStatus,
+  EmotionScore,
+  GoalEvaluationCode,
+  GoalHoldPeriod,
+  SellDiary,
+  SellReasonCode,
+  TradeJournalItem,
+} from '../../features/diaries/types';
 
-export type GoalEvaluationCode =
-  | 'KEPT_GOAL'
-  | 'SOLD_TOO_EARLY'
-  | 'SOLD_TOO_LATE'
-  | 'EMOTIONAL_SELL'
-  | 'AS_PLANNED'
-  | 'OTHER';
+export type TradeType = DiaryType;
 
 export type ViewMode = 'date' | 'company';
 
 /** trades **/
-export interface Trade {
-  id: number;
-  externalTradeId?: string;
-  tradeType: TradeType;
-  corpCode?: string;
-  corpName: string;
-  tradedAt: string;
-  price: number;
-  amount: number;
-  totalPrice: number;
-  per?: number;
-  pbr?: number;
-  marketCap?: number;
-  candle?: string;
-  diaryStatus: DiaryStatus;
-  realizedProfit?: number;
-  returnRate?: number;
-  currency?: string;
-  stockIndex?: string;
-}
-
-/** buy_diaries **/
-export interface BuyDiary {
-  id: number;
-  tradeId: number;
-  diaryBody: string;
-  goalStock?: number;
-  goalHoldPeriod?: string;
-  emotion?: number;
-  memo?: string;
-}
-
-/** sell_diaries **/
-export interface SellDiary {
-  id: number;
-  tradeId: number;
-  sellReasonCode: SellReasonCode;
-  sellReasonDetail?: string;
-  goalEvaluationCode?: GoalEvaluationCode;
-  goalEvaluationDetail?: string;
-  emotion?: number;
-  retrospectiveMemo?: string;
-}
-
-export interface TradeJournalItem extends Trade {
-  buyDiary?: BuyDiary;
-  sellDiary?: SellDiary;
-}
-
 /** Figma 377:2221 매도 이유 **/
 export const SELL_REASON_OPTIONS: { label: string; value: SellReasonCode }[] = [
   { label: '목표 도달', value: 'GOAL_REACHED' },
@@ -88,17 +45,17 @@ export const GOAL_EVAL_OPTIONS: {
 
 /** Figma 360:2125 목표 보유 기간 **/
 export const HOLD_PERIOD_OPTIONS = [
-  { label: '단기 (1개월 이하)', value: '단기 (1개월 이하)' },
-  { label: '중기 (1~6개월)', value: '중기 (1~6개월)' },
-  { label: '장기 (6개월 이상)', value: '장기 (6개월 이상)' },
-  { label: '기타 (직접 입력)', value: '기타 (직접 입력)' },
-];
+  { label: '단기 (1개월 이하)', value: 'SHORT_TERM' },
+  { label: '중기 (1~6개월)', value: 'MID_TERM' },
+  { label: '장기 (6개월 이상)', value: 'LONG_TERM' },
+  { label: '기타 (직접 입력)', value: 'CUSTOM' },
+] as const satisfies readonly { label: string; value: GoalHoldPeriod }[];
 
-/** Figma 464:2345 / 360:1945 기분 — 왼쪽(좋음) → 오른쪽(나쁨), value 5→1 **/
+/** 백엔드 계약: 1=완전 좋음 → 5=최악 **/
 export const EMOTION_OPTIONS = [
-  { value: 5, label: '완전 좋음' },
-  { value: 4, label: '좋음' },
+  { value: 1, label: '완전 좋음' },
+  { value: 2, label: '좋음' },
   { value: 3, label: '그냥' },
-  { value: 2, label: '안좋음' },
-  { value: 1, label: '최악' },
+  { value: 4, label: '안좋음' },
+  { value: 5, label: '최악' },
 ] as const;

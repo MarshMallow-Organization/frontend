@@ -5,5 +5,6 @@
 ## 현재 기능
 
 - `news/newsApi.ts`: 뉴스 타입, 목업 선택, 뉴스 조회 API 처리
+- `diaries/`: 매매일지·체결 DTO, API 호출, 화면 모델 변환
 
 도메인 API는 컴포넌트에서 `fetch`를 직접 호출하지 않고 `src/lib/api.ts`의 공통 래퍼를 사용한다. 백엔드 계약은 `docs/contracts/backend-api.md`를 먼저 확인한다.
