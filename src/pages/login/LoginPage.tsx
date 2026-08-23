@@ -8,6 +8,7 @@ import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
 import { tokens } from '../../theme/tokens';
 import googleLogo from '../../assets/icons/google.svg';
+import { navigate } from '../../lib/navigation';
 
 const { color } = tokens;
 
@@ -39,9 +40,10 @@ export default function LoginPage() {
         minHeight: '100svh',
         boxSizing: 'border-box',
         p: { xs: '3vh 4vw', md: '5.5vh 4.5vw' },
-        // decorative page gradient (92:662 reference)
         background:
           'linear-gradient(135deg, #eef6ff 0%, #f7f2ff 50%, #eafcff 100%)',
+        // 추가: 매우 큰 화면에서도 배경이 계속 적용됨
+        minWidth: '100vw',
       }}
     >
       <Box
@@ -171,7 +173,9 @@ export default function LoginPage() {
                 |
               </Box>
               <Link
-                href="#"
+                component="button"
+                type="button"
+                onClick={() => navigate('/signup')}
                 underline="hover"
                 sx={{ color: 'inherit', fontSize: 17 }}
               >
@@ -232,11 +236,9 @@ export default function LoginPage() {
           </Typography>
           <Typography
             sx={{
-              // Figma wordmark is 'Buffy' (renders as a bold serif); Buffy isn't
-              // bundled → bold-serif fallback matches the shape (placeholder brand).
-              fontFamily: "'Buffy', Georgia, 'Times New Roman', serif",
-              fontWeight: 700,
-              fontSize: 'clamp(28px, 3.2vw, 50px)', // 92:671 = 50px
+              fontFamily: "'Buffy', Georgia, serif",
+              fontWeight: 400, // 700 → 400 (Bold 웨이트 없음)
+              fontSize: 'clamp(28px, 3.2vw, 50px)',
               color: color.loginWordmark,
             }}
           >
