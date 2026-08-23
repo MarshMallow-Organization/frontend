@@ -67,6 +67,7 @@ const NAV_TABS: Array<{
   {
     id: 'account',
     label: '내 계좌',
+    path: '/account',
   },
   {
     id: 'journal',
@@ -133,7 +134,7 @@ export function AppShell({
 
         <ButtonBase
           aria-label="홈으로 이동"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           sx={{
             width: CHROME.home,
             height: CHROME.home,

@@ -8,6 +8,7 @@ import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
 import { tokens } from '../../theme/tokens';
 import googleLogo from '../../assets/icons/google.svg';
+import { redirectToGoogle } from '../../lib/googleAuth';
 
 const { color } = tokens;
 
@@ -22,15 +23,12 @@ const FORM_PANE_BG = [
   'radial-gradient(52% 56% at 2% 74%, rgba(77,183,255,0.34) 0%, rgba(77,183,255,0) 68%)',
 ].join(',');
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, ''); //api.ts에  BASE_URL에 export 안되있길래 그냥 만듬
-const GOOGLE_OAUTH_URL = `${API_BASE}/auth/google`;
-
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleGoogleLogin = () => {
-    window.location.href = GOOGLE_OAUTH_URL;
+    redirectToGoogle();
   };
 
   return (
