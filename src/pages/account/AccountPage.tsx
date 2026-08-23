@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import { format } from 'date-fns';
 import { AppShell } from '../../components/AppShell';
@@ -10,7 +10,10 @@ import type {
   HiddenStock,
   InvestmentFolder,
 } from '../../types/account';
-import { createVirtualAccount } from '../../features/assets/assetsApi';
+import {
+  createVirtualAccount,
+  getVirtualAccounts,
+} from '../../features/assets/assetsApi';
 import { ApiError } from '../../lib/api';
 import { AssetStatusScreen } from './AssetStatusScreen';
 import { VirtualAccountScreen } from './VirtualAccountScreen';
@@ -19,7 +22,6 @@ import { HideConfirmScreen } from './HideConfirmScreen';
 import {
   DEFAULT_HIDE_DURATION_DAYS,
   HOLDING_STOCKS,
-  INITIAL_FOLDERS,
   INITIAL_HIDDEN_STOCKS,
 } from './mock-data';
 
@@ -41,14 +43,30 @@ export default function AccountPage() {
     INITIAL_HIDDEN_STOCKS,
   );
 
-  const [folders, setFolders] = useState<InvestmentFolder[]>(INITIAL_FOLDERS);
-  const [selectedFolderId, setSelectedFolderId] = useState(
-    INITIAL_FOLDERS[0].id,
-  );
+  const [folders, setFolders] = useState<InvestmentFolder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState('');
+  const [isLoadingFolders, setIsLoadingFolders] = useState(true);
+  const [folderMaxCount, setFolderMaxCount] = useState<number | null>(null);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderModalError, setFolderModalError] = useState<string | null>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
+  useEffect(() => {
+    void getVirtualAccounts()
+      .then(({ portfolios, maxCount }) => {
+        const mapped = portfolios.map((account): InvestmentFolder => ({
+          id: String(account.id),
+          label: account.name,
+          holdings: [],
+        }));
+        setFolders(mapped);
+        setSelectedFolderId(mapped[0]?.id ?? '');
+        setFolderMaxCount(maxCount);
+      })
+      .catch(() => setFolders([]))
+      .finally(() => setIsLoadingFolders(false));
+  }, []);
 
   function handleSelectSubTab(tab: AccountSubTab) {
     subTabTransition.navigate(tab);
@@ -161,6 +179,10 @@ export default function AccountPage() {
               onSelectFolder={setSelectedFolderId}
               onOpenFolderModal={() => setShowFolderModal(true)}
               onHide={handleStartHide}
+              isLoadingFolders={isLoadingFolders}
+              disableAddFolder={
+                folderMaxCount !== null && folders.length >= folderMaxCount
+              }
             />
           )}
           {subTab === '숨기기' && hideFlow === 'list' && (

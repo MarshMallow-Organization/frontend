@@ -15,6 +15,10 @@ export interface VirtualAccountScreenProps {
   onSelectFolder: (id: string) => void;
   onOpenFolderModal: () => void;
   onHide: (stockName: string) => void;
+  /** true면 가상계좌 목록(GET /assets/portfolios)을 아직 불러오는 중. */
+  isLoadingFolders?: boolean;
+  /** 가상계좌 최대 개수(maxCount)에 도달해 "폴더 추가"를 막아야 하는지. */
+  disableAddFolder?: boolean;
 }
 
 const TREEMAP_PALETTE = [
@@ -123,6 +127,8 @@ export function VirtualAccountScreen({
   onSelectFolder,
   onOpenFolderModal,
   onHide,
+  isLoadingFolders = false,
+  disableAddFolder = false,
 }: VirtualAccountScreenProps) {
   const selected = folders.find((f) => f.id === selectedFolderId) ?? folders[0];
   const selectedIndex = folders.findIndex((f) => f.id === selected?.id);
@@ -169,6 +175,7 @@ export function VirtualAccountScreen({
             label="폴더 추가"
             icon={<AddIcon sx={{ fontSize: 14 }} />}
             onClick={onOpenFolderModal}
+            disabled={disableAddFolder}
             sx={{
               height: 34,
               fontSize: '0.75rem',
@@ -201,7 +208,9 @@ export function VirtualAccountScreen({
               fontSize: '0.875rem',
             }}
           >
-            아직 이 폴더에 담긴 종목이 없어요.
+            {isLoadingFolders
+              ? '가상계좌 목록을 불러오는 중이에요.'
+              : '아직 이 폴더에 담긴 종목이 없어요.'}
           </Box>
         ) : (
           <FolderTreemap holdings={selected.holdings} onHide={onHide} />
