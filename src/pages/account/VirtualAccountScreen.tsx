@@ -17,6 +17,8 @@ export interface VirtualAccountScreenProps {
   onHide: (stockName: string) => void;
   /** true면 가상계좌 목록(GET /assets/portfolios)을 아직 불러오는 중. */
   isLoadingFolders?: boolean;
+  /** true면 선택된 계좌의 보유 종목(GET /assets/portfolios/{id})을 아직 불러오는 중. */
+  isLoadingHoldings?: boolean;
   /** 가상계좌 최대 개수(maxCount)에 도달해 "폴더 추가"를 막아야 하는지. */
   disableAddFolder?: boolean;
 }
@@ -128,6 +130,7 @@ export function VirtualAccountScreen({
   onOpenFolderModal,
   onHide,
   isLoadingFolders = false,
+  isLoadingHoldings = false,
   disableAddFolder = false,
 }: VirtualAccountScreenProps) {
   const selected = folders.find((f) => f.id === selectedFolderId) ?? folders[0];
@@ -210,7 +213,9 @@ export function VirtualAccountScreen({
           >
             {isLoadingFolders
               ? '가상계좌 목록을 불러오는 중이에요.'
-              : '아직 이 폴더에 담긴 종목이 없어요.'}
+              : isLoadingHoldings
+                ? '보유 종목을 불러오는 중이에요.'
+                : '아직 이 폴더에 담긴 종목이 없어요.'}
           </Box>
         ) : (
           <FolderTreemap holdings={selected.holdings} onHide={onHide} />

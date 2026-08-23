@@ -75,3 +75,75 @@ export async function getVirtualAccounts(): Promise<VirtualAccountListResponse> 
   }
   return apiFetch<VirtualAccountListResponse>(VIRTUAL_ACCOUNTS_PATH);
 }
+
+/**
+ * GET /assets/portfolios/{portfolioId} 응답 (Notion "assets | 자산현황 · 특정
+ * 가상계좌 조회" 명세, 2026-08-24 기준).
+ *
+ * ⚠️ 백엔드 미구현: `portfolios.controller.ts`에는 GET(':portfolioId') 핸들러가
+ * 없다 (목록 조회 GET()만 있음) — holdings·totalReturnRate를 담은 응답 DTO도
+ * 없다. 이 함수는 지금 항상 mock을 반환하며, 백엔드에 엔드포인트가 생기면
+ * USE_ASSETS_MOCK을 끄고 그대로 실 API를 타게 된다.
+ */
+export interface VirtualAccountHolding {
+  stockCode: string;
+  stockName: string;
+  quantity: number;
+  avgBuyPrice: number;
+  currentPrice: number;
+  evaluationAmount: number;
+  unrealizedProfit: number;
+  /** 퍼센트 값 그대로 (예: 6.62 = 6.62%). AssetSummary의 rate 필드(분수)와 단위가 다르다. */
+  returnRate: number;
+}
+
+export interface VirtualAccountDetail extends VirtualAccount {
+  totalReturnRate: number;
+  holdings: VirtualAccountHolding[];
+}
+
+// 목업: Notion 명세의 Success Response 예시(id 12)를 그대로 사용. 그 외 id는
+// 문서에 예시가 없어 "종목 없음" 빈 상태로 둔다.
+const MOCK_VIRTUAL_ACCOUNT_DETAILS: Record<number, VirtualAccountDetail> = {
+  12: {
+    id: 12,
+    name: '안전형 투자',
+    sortOrder: 1,
+    createdAt: '2026-07-23T09:00:00Z',
+    totalReturnRate: 8.12,
+    holdings: [
+      {
+        stockCode: '005930',
+        stockName: '삼성전자',
+        quantity: 30,
+        avgBuyPrice: 68_000,
+        currentPrice: 72_500,
+        evaluationAmount: 2_175_000,
+        unrealizedProfit: 135_000,
+        returnRate: 6.62,
+      },
+    ],
+  },
+};
+
+export async function getVirtualAccountDetail(
+  portfolioId: number,
+): Promise<VirtualAccountDetail> {
+  if (USE_ASSETS_MOCK) {
+    const found = MOCK_VIRTUAL_ACCOUNT_DETAILS[portfolioId];
+    if (found) return Promise.resolve(found);
+
+    const listed = MOCK_VIRTUAL_ACCOUNTS.find((a) => a.id === portfolioId);
+    return Promise.resolve({
+      id: portfolioId,
+      name: listed?.name ?? '가상계좌',
+      sortOrder: listed?.sortOrder ?? 0,
+      createdAt: listed?.createdAt ?? new Date().toISOString(),
+      totalReturnRate: 0,
+      holdings: [],
+    });
+  }
+  return apiFetch<VirtualAccountDetail>(
+    `${VIRTUAL_ACCOUNTS_PATH}/${portfolioId}`,
+  );
+}

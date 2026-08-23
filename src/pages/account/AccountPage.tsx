@@ -8,10 +8,12 @@ import { useScreenTransition } from '../../hooks/useScreenTransition';
 import type {
   AccountSubTab,
   HiddenStock,
+  HoldingStock,
   InvestmentFolder,
 } from '../../types/account';
 import {
   createVirtualAccount,
+  getVirtualAccountDetail,
   getVirtualAccounts,
 } from '../../features/assets/assetsApi';
 import { ApiError } from '../../lib/api';
@@ -46,6 +48,9 @@ export default function AccountPage() {
   const [folders, setFolders] = useState<InvestmentFolder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState('');
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
+  const [holdingsLoadedFolderId, setHoldingsLoadedFolderId] = useState<
+    string | null
+  >(null);
   const [folderMaxCount, setFolderMaxCount] = useState<number | null>(null);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -67,6 +72,39 @@ export default function AccountPage() {
       .catch(() => setFolders([]))
       .finally(() => setIsLoadingFolders(false));
   }, []);
+
+  useEffect(() => {
+    const portfolioId = Number(selectedFolderId);
+    if (!selectedFolderId || !Number.isFinite(portfolioId)) return;
+
+    let cancelled = false;
+    void getVirtualAccountDetail(portfolioId)
+      .then((detail) => {
+        if (cancelled) return;
+        const holdings = detail.holdings.map((h): HoldingStock => ({
+          id: h.stockCode,
+          name: h.stockName,
+          amount: h.evaluationAmount,
+          changePct: h.returnRate,
+        }));
+        setFolders((prev) =>
+          prev.map((f) => (f.id === selectedFolderId ? { ...f, holdings } : f)),
+        );
+      })
+      .catch(() => {
+        /** 보유 종목을 못 불러와도 계좌 자체는 그대로 유지한다. */
+      })
+      .finally(() => {
+        if (!cancelled) setHoldingsLoadedFolderId(selectedFolderId);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFolderId]);
+
+  const isLoadingHoldings =
+    selectedFolderId !== '' && holdingsLoadedFolderId !== selectedFolderId;
 
   function handleSelectSubTab(tab: AccountSubTab) {
     subTabTransition.navigate(tab);
@@ -180,6 +218,7 @@ export default function AccountPage() {
               onOpenFolderModal={() => setShowFolderModal(true)}
               onHide={handleStartHide}
               isLoadingFolders={isLoadingFolders}
+              isLoadingHoldings={isLoadingHoldings}
               disableAddFolder={
                 folderMaxCount !== null && folders.length >= folderMaxCount
               }
