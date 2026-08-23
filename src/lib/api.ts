@@ -5,7 +5,7 @@
  *   Vite dev-server 프록시(vite.config.ts)가 백엔드로 전달합니다.
  * - 운영 환경: `VITE_API_URL`에 배포된 백엔드 주소를 지정합니다.
  */
-const BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
+const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 export interface ApiResponse<T> {
   data: T;
@@ -38,27 +38,21 @@ export class ApiError extends Error {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   return isRecord(value) && Object.hasOwn(value, 'data');
 }
 
-function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
-  return (
-    isRecord(value) &&
-    typeof value.code === 'string' &&
-    typeof value.message === 'string' &&
-    typeof value.traceId === 'string'
-  );
-}
-
 async function readResponseBody(response: Response): Promise<unknown> {
   if (response.status === 204) return undefined;
 
   const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) return response.text();
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    return text || undefined;
+  }
 
   try {
     return await response.json();
@@ -84,11 +78,23 @@ export async function apiFetch<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  const accessToken = localStorage.getItem('accessToken');
+  if (accessToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
   let response: Response;
   try {
-    response = await fetch(url, { ...init, headers });
+    response = await fetch(url, {
+      ...init,
+      credentials: init?.credentials ?? 'include',
+      headers,
+    });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (
+      init?.signal?.aborted ||
+      (error instanceof DOMException && error.name === 'AbortError')
+    ) {
       throw error;
     }
 
@@ -104,17 +110,23 @@ export async function apiFetch<T>(
   const body = await readResponseBody(response);
 
   if (!response.ok) {
-    const apiError = isApiErrorResponse(body) ? body : undefined;
+    const errorBody = isRecord(body) ? body : undefined;
     const fallbackMessage =
       typeof body === 'string' && body.trim().length > 0
         ? body
         : `요청 실패: ${response.status} ${response.statusText}`;
+    const message =
+      typeof errorBody?.message === 'string'
+        ? errorBody.message
+        : fallbackMessage;
 
     throw new ApiError(
       response.status,
-      apiError?.message ?? fallbackMessage,
-      apiError?.code,
-      apiError?.traceId ?? response.headers.get('x-request-id') ?? undefined,
+      message,
+      typeof errorBody?.code === 'string' ? errorBody.code : undefined,
+      typeof errorBody?.traceId === 'string'
+        ? errorBody.traceId
+        : (response.headers.get('x-request-id') ?? undefined),
     );
   }
 

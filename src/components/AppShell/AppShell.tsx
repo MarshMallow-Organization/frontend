@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 import Box from '@mui/material/Box';
-import Avatar from '@mui/material/Avatar';
 import ButtonBase from '@mui/material/ButtonBase';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 import { SearchField } from '../SearchField';
+import ProfileMenu from './ProfileMenu';
 import inactiveHomeIcon from '../../assets/icons/homepage.svg';
 import { navigate } from '../../lib/navigation';
 import { tokens } from '../../theme/tokens';
@@ -271,17 +270,7 @@ export function AppShell({
           <MenuRoundedIcon />
         </IconButton>
 
-        <Avatar
-          sx={{
-            width: CHROME.avatar,
-            height: CHROME.avatar,
-            ml: '15px',
-            bgcolor: '#c8d9e4',
-            color: color.white,
-          }}
-        >
-          <PersonRoundedIcon sx={{ width: 42, height: 42 }} />
-        </Avatar>
+        <ProfileMenu size={CHROME.avatar} marginLeft="15px" />
       </Box>
 
       <Box

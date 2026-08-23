@@ -5,6 +5,8 @@ import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
 import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
 import NewsPage from './pages/news/NewsPage';
 import TradeJournalPage from './pages/trade-journal/TradeJournalPage';
+import MyPage from './pages/my-page/MyPage';
+import MyPageEditPage from './pages/my-page/MyPageEditPage';
 
 function App() {
   const [location, setLocation] = useState(() => ({
@@ -51,6 +53,8 @@ function App() {
     return <TradeJournalPage />;
   }
   if (location.pathname.startsWith('/news')) return <NewsPage />;
+  if (location.pathname === '/my-page/edit') return <MyPageEditPage />;
+  if (location.pathname === '/my-page') return <MyPage />;
   return <LoginPage />;
 }
 

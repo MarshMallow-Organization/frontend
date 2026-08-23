@@ -33,4 +33,12 @@ export default function TradeJournalPage() {
 <AppShell currentPageLabel="뉴스 상세보기">{/* 뉴스 콘텐츠 */}</AppShell>
 ```
 
-현재 실제 페이지가 연결된 탭은 인기종목(`/news/popular`)과 매매일지(`/journal`)다. 나머지 탭은 해당 페이지가 추가될 때 공통 내비게이션 경로를 연결한다.
+현재 실제 페이지가 연결된 탭은 인기종목(`/news/popular`), 내 계좌(`/account`), 매매일지(`/journal`)다. 관심종목 탭은 해당 페이지가 추가될 때 공통 내비게이션 경로를 연결한다. 홈 버튼은 `/home`으로 이동한다.
+
+우측 아바타는 접근 가능한 프로필 메뉴 버튼이다. 메뉴는 Google 로그인 콜백이 localStorage에 저장한 사용자 정보를 표시하고 `/my-page` 이동과 임시 로그아웃을 제공한다. 저장된 사용자가 없으면 명시적인 mock 사용자를 표시한다. 로그아웃은 서버 API가 생기기 전까지 localStorage의 사용자와 access token만 제거한다.
+
+마이페이지는 기본 탭을 선택하지 않고 다음과 같이 별도 라벨을 사용한다.
+
+```tsx
+<AppShell currentPageLabel="마이페이지">{/* 마이페이지 카드 */}</AppShell>
+```

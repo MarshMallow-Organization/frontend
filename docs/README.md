@@ -7,18 +7,18 @@
 
 ## 문서 선택표
 
-| 작업 상황                  | 먼저 읽을 문서                                                                                               | 성격                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------- |
-| 모든 코드 변경             | [`convention.md`](./convention.md)                                                                           | 안정적인 코딩 규칙           |
-| 폴더 배치·의존성 결정      | [`architecture/frontend.md`](./architecture/frontend.md)                                                     | 현재 구조와 경계             |
-| 경로·탭·뒤로가기 변경      | [`architecture/routing.md`](./architecture/routing.md)                                                       | 임시 라우팅 계약             |
-| API·DTO·오류 처리          | [`contracts/backend-api.md`](./contracts/backend-api.md)                                                     | 백엔드 연동 계약             |
-| 모든 변경의 검증           | [`harness/verification.md`](./harness/verification.md)                                                       | 실행 가능한 검사와 완료 기준 |
-| 하네스의 목적·원칙         | [`harness/README.md`](./harness/README.md), [`harness/golden-principles.md`](./harness/golden-principles.md) | 운영 모델                    |
-| 하네스 자동화 개선         | [`harness/roadmap.md`](./harness/roadmap.md)                                                                 | 도입 순서와 현황             |
-| 마이페이지·AppShell 작업   | [`product-specs/mypage.md`](./product-specs/mypage.md)                                                       | 제품·구현 경계               |
-| 복잡한 작업 계획·기술 부채 | [`exec-plans/README.md`](./exec-plans/README.md), [`exec-plans/tech-debt.md`](./exec-plans/tech-debt.md)     | 실행 기록                    |
-| Zustand 설계               | [`references/zustand.md`](./references/zustand.md)                                                           | 선택적 참고 자료             |
+| 작업 상황                  | 먼저 읽을 문서                                                                                                                           | 성격                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 모든 코드 변경             | [`convention.md`](./convention.md)                                                                                                       | 안정적인 코딩 규칙           |
+| 폴더 배치·의존성 결정      | [`architecture/frontend.md`](./architecture/frontend.md)                                                                                 | 현재 구조와 경계             |
+| 경로·탭·뒤로가기 변경      | [`architecture/routing.md`](./architecture/routing.md)                                                                                   | 임시 라우팅 계약             |
+| API·DTO·오류 처리          | [`contracts/backend-api.md`](./contracts/backend-api.md)                                                                                 | 백엔드 연동 계약             |
+| 모든 변경의 검증           | [`harness/verification.md`](./harness/verification.md)                                                                                   | 실행 가능한 검사와 완료 기준 |
+| 하네스의 목적·원칙         | [`harness/README.md`](./harness/README.md), [`harness/golden-principles.md`](./harness/golden-principles.md)                             | 운영 모델                    |
+| 하네스 자동화 개선         | [`harness/roadmap.md`](./harness/roadmap.md)                                                                                             | 도입 순서와 현황             |
+| 마이페이지·AppShell 작업   | [`product-specs/mypage.md`](./product-specs/mypage.md), [`product-specs/mypage-data-sources.md`](./product-specs/mypage-data-sources.md) | 제품·데이터 소스 경계        |
+| 복잡한 작업 계획·기술 부채 | [`exec-plans/README.md`](./exec-plans/README.md), [`exec-plans/tech-debt.md`](./exec-plans/tech-debt.md)                                 | 실행 기록                    |
+| Zustand 설계               | [`references/zustand.md`](./references/zustand.md)                                                                                       | 선택적 참고 자료             |
 
 공용 컴포넌트의 사용법은 `src/components/README.md`와 각 컴포넌트 폴더 README가 원본이다. 실제 API 계약은 백엔드 Swagger와 `../backend/src/docs`가 최종 원본이다.
 

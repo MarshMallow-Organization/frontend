@@ -1,7 +1,7 @@
 # Backend API Contract
 
-> 상태: active
-> 최종 확인: 2026-08-21
+> 상태: active-with-known-gap
+> 최종 확인: 2026-08-24
 > 근거: `../backend/src/docs/common-response.md`, `../backend/src/docs/swagger-api.md`, `../backend/src/domains/domain.md`, `src/lib/api.ts`
 
 API 구현 전에는 실행 중인 백엔드의 Swagger UI(`/swagger`) 또는 OpenAPI JSON(`/swagger-json`)과 관련 DTO를 확인한다. 이 문서는 공통 규칙의 요약이며 실제 Swagger가 최종 계약이다.
@@ -44,7 +44,9 @@ export type ApiErrorResponse = {
 
 ## 공통 래퍼 동작
 
-`src/lib/api.ts`는 정상 응답의 `{ data: T }`를 풀어서 `T`를 반환한다. 오류에서는 HTTP `status`와 서버의 `code`, `message`, `traceId`를 `ApiError`에 보존한다. `204`, 비 JSON 응답, 잘못된 JSON, 요청 취소, 네트워크 단절도 공통 계층에서 구분한다.
+`src/lib/api.ts`는 정상 응답의 `{ data: T }`를 풀어서 `T`를 반환한다. access token이 있으면 Bearer 헤더를 추가하고 `credentials: 'include'`를 기본값으로 사용한다. 오류에서는 HTTP `status`와 서버의 `code`, `message`, `traceId`를 `ApiError`에 보존한다. `204`, 비 JSON 응답, 잘못된 JSON, 요청 취소, 네트워크 단절도 공통 계층에서 구분한다.
+
+도메인별로 Swagger에 없는 필드를 DTO에 추측해 넣지 않는다. 마이페이지의 현재 API/샘플 경계는 [`../product-specs/mypage-data-sources.md`](../product-specs/mypage-data-sources.md)에 기록한다.
 
 ## 페이지네이션·필터 공통 기준
 
