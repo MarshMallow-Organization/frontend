@@ -10,6 +10,8 @@ import type {
   HiddenStock,
   InvestmentFolder,
 } from '../../types/account';
+import { createVirtualAccount } from '../../features/assets/assetsApi';
+import { ApiError } from '../../lib/api';
 import { AssetStatusScreen } from './AssetStatusScreen';
 import { VirtualAccountScreen } from './VirtualAccountScreen';
 import { HideListScreen } from './HideListScreen';
@@ -45,6 +47,8 @@ export default function AccountPage() {
   );
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [folderModalError, setFolderModalError] = useState<string | null>(null);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   function handleSelectSubTab(tab: AccountSubTab) {
     subTabTransition.navigate(tab);
@@ -80,17 +84,37 @@ export default function AccountPage() {
     setHideFlow('list');
   }
 
-  function handleAddFolder() {
-    if (!newFolderName.trim()) return;
-    const folder: InvestmentFolder = {
-      id: `f-${Date.now()}`,
-      label: newFolderName.trim(),
-      holdings: [],
-    };
-    setFolders((prev) => [...prev, folder]);
-    setSelectedFolderId(folder.id);
-    setNewFolderName('');
+  function handleCloseFolderModal() {
     setShowFolderModal(false);
+    setFolderModalError(null);
+  }
+
+  async function handleAddFolder() {
+    const name = newFolderName.trim();
+    if (!name) return;
+
+    setIsCreatingFolder(true);
+    setFolderModalError(null);
+    try {
+      const account = await createVirtualAccount(name);
+      const folder: InvestmentFolder = {
+        id: String(account.id),
+        label: account.name,
+        holdings: [],
+      };
+      setFolders((prev) => [...prev, folder]);
+      setSelectedFolderId(folder.id);
+      setNewFolderName('');
+      setShowFolderModal(false);
+    } catch (error) {
+      setFolderModalError(
+        error instanceof ApiError
+          ? error.message
+          : '가상계좌 생성에 실패했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsCreatingFolder(false);
+    }
   }
 
   const subTab = subTabTransition.displayed;
@@ -162,8 +186,10 @@ export default function AccountPage() {
         open={showFolderModal}
         value={newFolderName}
         onChange={setNewFolderName}
-        onCancel={() => setShowFolderModal(false)}
-        onConfirm={handleAddFolder}
+        onCancel={handleCloseFolderModal}
+        onConfirm={() => void handleAddFolder()}
+        error={folderModalError}
+        isSubmitting={isCreatingFolder}
       />
     </AppShell>
   );
