@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
+import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -9,6 +11,7 @@ import type { TradeJournalItem } from '../types';
 import {
   EMOTION_OPTIONS,
   GOAL_EVAL_OPTIONS,
+  HOLD_PERIOD_OPTIONS,
   SELL_REASON_OPTIONS,
 } from '../types';
 import {
@@ -32,10 +35,22 @@ export interface JournalDetailProps {
   item: TradeJournalItem | null;
   onEdit: () => void;
   onDelete: () => void;
+  onCreate: () => void;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 /** Figma 상세 패널 — 번호 섹션 + 거래/기업 정보 카드 **/
-export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
+export function JournalDetail({
+  item,
+  onEdit,
+  onDelete,
+  onCreate,
+  loading = false,
+  error,
+  onRetry,
+}: JournalDetailProps) {
   if (!item) {
     return (
       <Box
@@ -57,7 +72,7 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
   const isBuy = item.tradeType === 'BUY';
   const accent = isBuy ? BUY_ACCENT : SELL_ACCENT;
   const badge = isBuy ? BUY_BADGE : SELL_BADGE;
-  const hasDiary = Boolean(item.buyDiary || item.sellDiary);
+  const hasDiary = item.diaryId != null;
 
   const sellReasonLabel = SELL_REASON_OPTIONS.find(
     (o) => o.value === item.sellDiary?.sellReasonCode,
@@ -68,6 +83,12 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
   const emotion = EMOTION_OPTIONS.find(
     (o) => o.value === (item.buyDiary?.emotion ?? item.sellDiary?.emotion),
   );
+  const goalHoldPeriodLabel =
+    item.buyDiary?.goalHoldPeriod === 'CUSTOM'
+      ? item.buyDiary.customGoalHoldPeriod
+      : HOLD_PERIOD_OPTIONS.find(
+          (option) => option.value === item.buyDiary?.goalHoldPeriod,
+        )?.label;
 
   return (
     <Box
@@ -81,6 +102,27 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
         pr: 1,
       }}
     >
+      {loading ? <LinearProgress sx={{ mb: 1 }} /> : null}
+      {error ? (
+        <Alert
+          severity="error"
+          action={
+            onRetry ? (
+              <Box
+                component="button"
+                type="button"
+                onClick={onRetry}
+                sx={{ border: 0, background: 'transparent', cursor: 'pointer' }}
+              >
+                다시 시도
+              </Box>
+            ) : undefined
+          }
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      ) : null}
       <Box
         sx={{
           display: 'flex',
@@ -92,7 +134,7 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
         <IconButton
           aria-label="일지 수정"
           onClick={onEdit}
-          disabled={!hasDiary}
+          disabled={!hasDiary || loading}
           size="small"
         >
           <EditOutlinedIcon />
@@ -100,7 +142,7 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
         <IconButton
           aria-label="일지 삭제"
           onClick={onDelete}
-          disabled={!hasDiary}
+          disabled={!hasDiary || loading}
           size="small"
         >
           <DeleteOutlineOutlinedIcon />
@@ -163,10 +205,15 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
             >
               <Metric
                 label={isBuy ? '매수가' : '매도가'}
-                value={formatPrice(item.price)}
+                value={item.price != null ? formatPrice(item.price) : '-'}
               />
               <Metric label="수량" value={`${item.amount}주`} />
-              <Metric label="총 금액" value={formatPrice(item.totalPrice)} />
+              <Metric
+                label="총 금액"
+                value={
+                  item.totalPrice != null ? formatPrice(item.totalPrice) : '-'
+                }
+              />
             </Box>
           </InfoCard>
         </DetailSection>
@@ -318,14 +365,36 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
         )}
 
         {item.diaryStatus === 'PENDING' && !hasDiary ? (
-          <Typography sx={{ color: color.mutedGray }}>
-            아직 작성된 일지가 없습니다.
-          </Typography>
+          <Box>
+            <Typography sx={{ color: color.mutedGray, mb: 2 }}>
+              아직 작성된 일지가 없습니다.
+            </Typography>
+            <Box
+              component="button"
+              type="button"
+              onClick={onCreate}
+              disabled={loading}
+              sx={{
+                minWidth: 140,
+                height: 42,
+                border: 0,
+                borderRadius: '12px',
+                backgroundColor: accent,
+                color: color.white,
+                fontFamily,
+                fontWeight: 700,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              일기 쓰기
+            </Box>
+          </Box>
         ) : isBuy && item.buyDiary ? (
           <>
             <DetailSection n={3} title="매수 이유" accent={accent}>
               <InfoCard>
-                <BodyText>{item.buyDiary.diaryBody}</BodyText>
+                <BodyText>{item.buyDiary.buyReason}</BodyText>
               </InfoCard>
             </DetailSection>
             <DetailSection n={4} title="투자 계획" accent={accent}>
@@ -334,14 +403,14 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
                   <Metric
                     label="목표 주가"
                     value={
-                      item.buyDiary.goalStock != null
-                        ? formatPrice(item.buyDiary.goalStock)
+                      item.buyDiary.goalPrice != null
+                        ? formatPrice(item.buyDiary.goalPrice)
                         : '-'
                     }
                   />
                   <Metric
                     label="목표 보유 기간"
-                    value={item.buyDiary.goalHoldPeriod ?? '-'}
+                    value={goalHoldPeriodLabel ?? '-'}
                   />
                 </Box>
               </InfoCard>
@@ -376,10 +445,10 @@ export function JournalDetail({ item, onEdit, onDelete }: JournalDetailProps) {
                 </InfoCard>
               </DetailSection>
             )}
-            {item.sellDiary.retrospectiveMemo ? (
+            {item.sellDiary.memo ? (
               <DetailSection n={6} title="회고 메모" accent={accent}>
                 <InfoCard>
-                  <BodyText>{item.sellDiary.retrospectiveMemo}</BodyText>
+                  <BodyText>{item.sellDiary.memo}</BodyText>
                 </InfoCard>
               </DetailSection>
             ) : null}

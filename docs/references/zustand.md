@@ -53,12 +53,12 @@ store는 `getState`, `setState`, `subscribe` API를 제공한다. 따라서 API 
 
 반대로 다음 상태는 우선 다른 방법을 고려한다.
 
-| 상태 종류 | 우선 고려할 방법 |
-| --- | --- |
-| 한 컴포넌트에서만 쓰는 입력값, 열림 여부 | `useState`, `useReducer` |
-| 부모와 가까운 자식 몇 개만 공유하는 값 | props, Context |
-| URL로 공유하거나 새로고침 후에도 복원해야 하는 검색 조건 | URL search params |
-| 서버에서 가져온 데이터의 캐시, 재요청, 동기화 | 서버 상태 관리 도구 또는 API 계층 |
+| 상태 종류                                                | 우선 고려할 방법                  |
+| -------------------------------------------------------- | --------------------------------- |
+| 한 컴포넌트에서만 쓰는 입력값, 열림 여부                 | `useState`, `useReducer`          |
+| 부모와 가까운 자식 몇 개만 공유하는 값                   | props, Context                    |
+| URL로 공유하거나 새로고침 후에도 복원해야 하는 검색 조건 | URL search params                 |
+| 서버에서 가져온 데이터의 캐시, 재요청, 동기화            | 서버 상태 관리 도구 또는 API 계층 |
 
 모든 상태를 전역 store에 넣으면 상태의 소유권이 불분명해지고 store 간 의존성이 커질 수 있다. **둘 이상의 멀리 떨어진 컴포넌트가 실제로 공유하는가**를 기준으로 판단한다.
 
@@ -171,8 +171,7 @@ export const usePlayerStore = create<PlayerState>()((set) => ({
   volume: 1,
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
-  setVolume: (volume) =>
-    set({ volume: Math.min(1, Math.max(0, volume)) }),
+  setVolume: (volume) => set({ volume: Math.min(1, Math.max(0, volume)) }),
 }));
 ```
 
@@ -226,8 +225,11 @@ state.todos[0].completed = true;
 ## 8. 비동기 액션
 
 액션 함수 안에서 비동기 작업을 수행한 뒤 `set`으로 결과를 반영할 수 있다.
+이 프로젝트에서는 컴포넌트나 store가 `fetch`를 직접 호출하지 않고 `src/lib/api.ts`의 공통 래퍼를 사용한다.
 
 ```ts
+import { apiFetch } from '../lib/api';
+
 interface User {
   id: number;
   name: string;
@@ -249,13 +251,7 @@ export const useUserStore = create<UserState>()((set) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const response = await fetch(`/api/users/${id}`);
-
-      if (!response.ok) {
-        throw new Error('사용자 조회에 실패했습니다.');
-      }
-
-      const user = (await response.json()) as User;
+      const user = await apiFetch<User>(`/users/${id}`);
       set({ user, isLoading: false });
     } catch (error) {
       set({
@@ -321,11 +317,7 @@ store마다 구분 가능한 이름을 부여한다. 디버깅할 때 액션 이
 
 ```ts
 increment: () =>
-  set(
-    (state) => ({ count: state.count + 1 }),
-    false,
-    'counter/increment',
-  );
+  set((state) => ({ count: state.count + 1 }), false, 'counter/increment');
 ```
 
 ### Persist

@@ -67,6 +67,16 @@ export const tokens = {
     sell: '#e85d5d', // SELL badge / card accent
     sellBg: '#fff5f5', // SELL card soft fill
     buyBadge: '#11acd0', // BUY badge (= selected cyan)
+    // 홈/내 계좌 (등락률 표시, 국내 관행: 상승=빨강/하락=파랑)
+    priceUp: '#e6483d', // 상승(양수 등락률)
+    priceDown: '#3b82f6', // 하락(음수 등락률)
+    // 가상계좌 폴더 트리맵 팔레트 (Figma 339:1043 히트맵 그룹)
+    heatmapPink: 'rgba(241,181,181,0.8)',
+    heatmapPinkSoft: 'rgba(241,181,181,0.5)',
+    heatmapBlue: '#bde8f2',
+    heatmapGreen: '#e5f3da',
+    // 숨기기 목록 아이콘 박스 (Figma 339:1317: 테슬라=blue accentBlue, 인텔=amber)
+    hideIconAmber: '#bf6a02',
   },
   radius: 8, // buttons (14:359)
   radiusField: 10, // chips & filled search fields (17:441 / 16:395)

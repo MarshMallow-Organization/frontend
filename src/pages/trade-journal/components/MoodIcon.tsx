@@ -5,28 +5,29 @@ import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
 import type { SvgIconComponent } from '@mui/icons-material';
+import type { EmotionScore } from '../types';
 
 /**
  * Figma `360:1945` 기분 아이콘 컴포넌트.
  * 속성: O(선택) / X(비선택) × 완전 좋음~최악
  * Material `sentiment_*` 아이콘 + 원형 배경 (36×36).
  */
-export type MoodValue = 1 | 2 | 3 | 4 | 5;
+export type MoodValue = EmotionScore;
 
 const ICONS: Record<MoodValue, SvgIconComponent> = {
-  5: SentimentVerySatisfiedIcon, // sentiment_excited
-  4: SentimentSatisfiedAltIcon, // sentiment_satisfied
+  1: SentimentVerySatisfiedIcon, // sentiment_excited
+  2: SentimentSatisfiedAltIcon, // sentiment_satisfied
   3: SentimentNeutralIcon, // sentiment_neutral
-  2: SentimentDissatisfiedIcon, // sentiment_dissatisfied
-  1: SentimentVeryDissatisfiedIcon, // sentiment_very_dissatisfied
+  4: SentimentDissatisfiedIcon, // sentiment_dissatisfied
+  5: SentimentVeryDissatisfiedIcon, // sentiment_very_dissatisfied
 };
 
 const LABELS: Record<MoodValue, string> = {
-  5: '완전 좋음',
-  4: '좋음',
+  1: '완전 좋음',
+  2: '좋음',
   3: '그냥',
-  2: '안좋음',
-  1: '최악',
+  4: '안좋음',
+  5: '최악',
 };
 
 export interface MoodIconProps {

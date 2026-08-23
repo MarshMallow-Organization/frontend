@@ -53,15 +53,13 @@ export function listCompanies(items: TradeJournalItem[]): {
     .sort((a, b) => a.corpName.localeCompare(b.corpName, 'ko'));
 }
 
-/** 캘린더 마킹용 — 거래가 있는 날짜 **/
+/** 캘린더 마킹용 — 작성 완료된 일기의 작성일 **/
 export function listDiaryDates(items: TradeJournalItem[]): Date[] {
   const seen = new Set<string>();
   const dates: Date[] = [];
   for (const item of items) {
-    if (!(item.buyDiary || item.sellDiary || item.diaryStatus === 'PENDING')) {
-      continue;
-    }
-    const d = startOfDay(parseISO(item.tradedAt));
+    if (item.diaryStatus !== 'COMPLETED') continue;
+    const d = startOfDay(parseISO(item.diaryDate));
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -72,9 +70,10 @@ export function listDiaryDates(items: TradeJournalItem[]): Date[] {
 
 export function previewText(item: TradeJournalItem, max = 40): string {
   const raw =
-    item.buyDiary?.diaryBody ??
-    item.sellDiary?.retrospectiveMemo ??
+    item.buyDiary?.buyReason ??
+    item.sellDiary?.memo ??
     item.sellDiary?.sellReasonDetail ??
+    item.previewMemo ??
     (item.diaryStatus === 'PENDING' ? '일지를 작성해 주세요.' : '');
   if (raw.length <= max) return raw;
   return `${raw.slice(0, max)}…`;
