@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -18,7 +18,15 @@ import {
 } from 'date-fns';
 import { BaseCard } from '../../../components/BaseCard';
 import { Select } from '../../../components/Select';
-import { INITIAL_JOURNAL_ITEMS } from '../../trade-journal/mock-data';
+import {
+  getAllDiaryPreviews,
+  getAllTrades,
+} from '../../../features/diaries/diariesApi';
+import {
+  diaryPreviewToJournalItem,
+  tradesToPendingJournalItems,
+} from '../../../features/diaries/mappers';
+import type { TradeJournalItem } from '../../../features/diaries/types';
 import { formatTradeDateTime } from '../../trade-journal/filter-items';
 import { STOCK_EVENTS } from '../mock-data';
 import { tokens } from '../../../theme/tokens';
@@ -54,20 +62,40 @@ export function CalendarCard({
   selectedDate,
   onSelectDate,
 }: CalendarCardProps) {
+  const [journalItems, setJournalItems] = useState<TradeJournalItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([getAllDiaryPreviews(), getAllTrades()])
+      .then(([previews, trades]) => {
+        if (cancelled) return;
+        const completed = previews.map(diaryPreviewToJournalItem);
+        const completedOrderIds = new Set(
+          completed.map((item) => item.orderId),
+        );
+        const pending = tradesToPendingJournalItems(trades, completedOrderIds);
+        setJournalItems([...completed, ...pending]);
+      })
+      .catch(() => {
+        if (!cancelled) setJournalItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const markedDates = useMemo(
     () => [
-      ...INITIAL_JOURNAL_ITEMS.map((i) => startOfDay(parseISO(i.tradedAt))),
+      ...journalItems.map((i) => startOfDay(parseISO(i.tradedAt))),
       ...STOCK_EVENTS.map((e) => startOfDay(parseISO(e.date))),
     ],
-    [],
+    [journalItems],
   );
 
   const dayTrades = useMemo(
     () =>
-      INITIAL_JOURNAL_ITEMS.filter((i) =>
-        isSameDay(parseISO(i.tradedAt), selectedDate),
-      ),
-    [selectedDate],
+      journalItems.filter((i) => isSameDay(parseISO(i.tradedAt), selectedDate)),
+    [journalItems, selectedDate],
   );
   const dayEvents = useMemo(
     () => STOCK_EVENTS.filter((e) => isSameDay(parseISO(e.date), selectedDate)),
