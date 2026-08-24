@@ -17,6 +17,9 @@ export interface FolderModalProps {
   onChange: (v: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
+  /** 가상계좌 생성 API 에러 메시지 (400/409 등 서버 메시지를 그대로 표시). */
+  error?: string | null;
+  isSubmitting?: boolean;
 }
 
 /** 가상 계좌 화면의 "폴더 추가" 모달. */
@@ -26,6 +29,8 @@ export function FolderModal({
   onChange,
   onCancel,
   onConfirm,
+  error,
+  isSubmitting = false,
 }: FolderModalProps) {
   return (
     <Dialog
@@ -64,19 +69,28 @@ export function FolderModal({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="ex. 안정형 투자"
-          sx={{ mb: 3 }}
+          error={Boolean(error)}
+          helperText={error ?? ' '}
+          disabled={isSubmitting}
+          sx={{ mb: 1 }}
         />
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-          <Button appVariant="outline" onClick={onCancel}>
+        <Box
+          sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}
+        >
+          <Button
+            appVariant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
             취소
           </Button>
           <Button
             appVariant="filled"
             onClick={onConfirm}
-            disabled={!value.trim()}
+            disabled={!value.trim() || isSubmitting}
           >
-            완료
+            {isSubmitting ? '생성 중...' : '완료'}
           </Button>
         </Box>
       </DialogContent>
