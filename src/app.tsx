@@ -54,7 +54,11 @@ function App() {
    * 경로를 바꿀 때는 AppShell의 NAV_TABS와 navigation.ts를 함께 확인하고,
    * 이전 주소 호환이 필요하면 기존 경로를 alias로 남긴다.
    */
+<<<<<<< Updated upstream
   if (location.pathname === '/signup') return <SignUpPage />;
+=======
+
+>>>>>>> Stashed changes
   if (
     location.pathname === '/journal' ||
     location.pathname === '/trade-journal' ||
