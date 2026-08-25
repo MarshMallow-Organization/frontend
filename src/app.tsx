@@ -11,7 +11,7 @@ import StockDetailPage from './pages/stock/StockDetailPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 import { GOOGLE_CALLBACK_PATH } from './lib/googleAuth';
 import SignUpPage from './pages/signup/SignUpPage';
-import ApiKeyPage from './pages/api-key/ApiKeyPage';
+import RegisterKeyPage from './pages/register-key/RegisterKeyPage';
 
 function App() {
   const [location, setLocation] = useState(() => ({
@@ -64,7 +64,7 @@ function App() {
     return <TradeJournalPage />;
   }
   if (location.pathname === '/signup') return <SignUpPage />;
-  if (location.pathname === '/api-key') return <ApiKeyPage />;
+  if (location.pathname === '/register-key') return <RegisterKeyPage />;
 
   if (location.pathname.startsWith('/news')) return <NewsPage />;
   // AppShell 홈 버튼(navigate('/home'))·내 계좌 탭(navigate('/account'))의 실제
