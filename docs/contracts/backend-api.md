@@ -46,7 +46,7 @@ export type ApiErrorResponse = {
 
 `src/lib/api.ts`는 정상 응답의 `{ data: T }`를 풀어서 `T`를 반환한다. access token이 있으면 Bearer 헤더를 추가하고 `credentials: 'include'`를 기본값으로 사용한다. 오류에서는 HTTP `status`와 서버의 `code`, `message`, `traceId`를 `ApiError`에 보존한다. `204`, 비 JSON 응답, 잘못된 JSON, 요청 취소, 네트워크 단절도 공통 계층에서 구분한다.
 
-백엔드 `dev`의 `/diaries`, `/assets/portfolios`, `/users/me/favorite-stocks`는 아직 `StubAuthGuard`를 사용한다. 로컬 개발 빌드에서는 공통 래퍼가 세션의 양의 정수 사용자 ID를 `x-stub-user-id`로 전달한다. 세션 ID가 없거나 잘못됐으면 백엔드 기본 사용자 1로 조용히 대체되지 않도록 `0`을 보내 401로 실패시킨다. 운영 빌드에는 이 스텁 헤더를 추가하지 않으며, 세 API의 실제 인증은 백엔드 JWT guard 전환이 필요하다.
+백엔드 `dev`의 일부 API는 아직 `StubAuthGuard`를 사용한다. 로컬 개발 빌드에서는 공통 래퍼가 세션의 양의 정수 사용자 ID를 `x-stub-user-id`로 전달하고, 세션이 없거나 ID가 잘못됐으면 테스트용 기본 사용자 `1`을 사용한다. 따라서 새 브라우저에서도 로그인 없이 개발 기능을 검증할 수 있다. 운영 빌드에는 이 스텁 헤더를 추가하지 않으며, 실제 인증은 백엔드 JWT guard 전환이 필요하다.
 
 도메인별로 Swagger에 없는 필드를 DTO에 추측해 넣지 않는다. 마이페이지의 현재 API/샘플 경계는 [`../product-specs/mypage-data-sources.md`](../product-specs/mypage-data-sources.md)에 기록한다.
 

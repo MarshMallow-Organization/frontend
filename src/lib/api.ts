@@ -8,6 +8,7 @@ import { readSessionUserId } from './authSession';
  * - 운영 환경: `VITE_API_URL`에 배포된 백엔드 주소를 지정합니다.
  */
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
+const DEFAULT_STUB_USER_ID = 1;
 
 export interface ApiResponse<T> {
   data: T;
@@ -87,8 +88,11 @@ export async function apiFetch<T>(
 
   if (import.meta.env.DEV && !headers.has('x-stub-user-id')) {
     // 현재 백엔드 dev의 일부 API는 Bearer 토큰 대신 StubAuthGuard를 사용한다.
-    // 헤더를 생략하면 사용자 1로 처리되므로 세션 ID가 없을 때는 실패하도록 0을 보낸다.
-    headers.set('x-stub-user-id', String(readSessionUserId() ?? 0));
+    // 새 브라우저에서도 기능을 검증할 수 있도록 세션이 없으면 기본 Stub 사용자를 쓴다.
+    headers.set(
+      'x-stub-user-id',
+      String(readSessionUserId() ?? DEFAULT_STUB_USER_ID),
+    );
   }
 
   let response: Response;
