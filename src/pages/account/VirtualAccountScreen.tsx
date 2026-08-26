@@ -3,6 +3,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import { BaseCard } from '../../components/BaseCard';
 import { Chip } from '../../components/Chip';
 import type { HoldingStock, InvestmentFolder } from '../../types/account';
@@ -18,6 +19,8 @@ export interface VirtualAccountScreenProps {
   onOpenFolderModal: () => void;
   /** 선택된 가상계좌의 이름 변경 모달을 연다. */
   onOpenRenameModal: (folderId: string) => void;
+  /** 선택된 가상계좌의 삭제 확인 모달을 연다. */
+  onOpenDeleteConfirm: (folderId: string) => void;
   onHide: (stockName: string) => void;
   /** true면 가상계좌 목록(GET /assets/portfolios)을 아직 불러오는 중. */
   isLoadingFolders?: boolean;
@@ -133,6 +136,7 @@ export function VirtualAccountScreen({
   onSelectFolder,
   onOpenFolderModal,
   onOpenRenameModal,
+  onOpenDeleteConfirm,
   onHide,
   isLoadingFolders = false,
   isLoadingHoldings = false,
@@ -217,6 +221,13 @@ export function VirtualAccountScreen({
               onClick={() => onOpenRenameModal(selected.id)}
             >
               <EditIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton
+              aria-label="가상계좌 삭제"
+              size="small"
+              onClick={() => onOpenDeleteConfirm(selected.id)}
+            >
+              <DeleteOutlineIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
         )}

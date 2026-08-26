@@ -140,3 +140,25 @@ export async function renameVirtualAccount(
     },
   );
 }
+
+/**
+ * DELETE /assets/portfolios/{portfolioId} 응답 (Notion "assets | 자산현황 · 가상계좌
+ * 삭제" 명세, 2026-08-24 기준). 계좌에 담긴 종목 등록 정보(virtual_portfolio_stocks)도
+ * 함께 삭제되지만 거래 기록(trades)은 영향받지 않는다 — 백엔드에 실제로 구현돼 있다.
+ */
+export interface VirtualAccountDeleted {
+  id: number;
+  deleted: boolean;
+}
+
+export async function deleteVirtualAccount(
+  portfolioId: number,
+): Promise<VirtualAccountDeleted> {
+  if (USE_ASSETS_MOCK) {
+    return Promise.resolve({ id: portfolioId, deleted: true });
+  }
+  return apiFetch<VirtualAccountDeleted>(
+    `${VIRTUAL_ACCOUNTS_PATH}/${portfolioId}`,
+    { method: 'DELETE' },
+  );
+}

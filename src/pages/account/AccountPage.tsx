@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { AppShell } from '../../components/AppShell';
 import { AccountSidebar } from '../../components/AccountSidebar';
 import { FolderModal } from '../../components/FolderModal';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useScreenTransition } from '../../hooks/useScreenTransition';
 import type {
   AccountSubTab,
@@ -13,6 +14,7 @@ import type {
 } from '../../types/account';
 import {
   createVirtualAccount,
+  deleteVirtualAccount,
   getVirtualAccountDetail,
   getVirtualAccounts,
   renameVirtualAccount,
@@ -62,6 +64,11 @@ export default function AccountPage() {
   const [renameFolderName, setRenameFolderName] = useState('');
   const [renameModalError, setRenameModalError] = useState<string | null>(null);
   const [isRenamingFolder, setIsRenamingFolder] = useState(false);
+
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetLabel, setDeleteTargetLabel] = useState('');
+  const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
+  const [isDeletingFolder, setIsDeletingFolder] = useState(false);
 
   useEffect(() => {
     void getVirtualAccounts()
@@ -220,6 +227,46 @@ export default function AccountPage() {
     }
   }
 
+  function handleOpenDeleteConfirm(folderId: string) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    setDeleteTargetId(folderId);
+    setDeleteTargetLabel(folder.label);
+    setDeleteModalError(null);
+  }
+
+  function handleCloseDeleteConfirm() {
+    setDeleteTargetId(null);
+    setDeleteModalError(null);
+  }
+
+  async function handleDeleteFolder() {
+    if (!deleteTargetId) return;
+
+    const portfolioId = Number(deleteTargetId);
+    if (!Number.isFinite(portfolioId)) return;
+
+    setIsDeletingFolder(true);
+    setDeleteModalError(null);
+    try {
+      await deleteVirtualAccount(portfolioId);
+      const remaining = folders.filter((f) => f.id !== deleteTargetId);
+      setFolders(remaining);
+      if (selectedFolderId === deleteTargetId) {
+        setSelectedFolderId(remaining[0]?.id ?? '');
+      }
+      setDeleteTargetId(null);
+    } catch (error) {
+      setDeleteModalError(
+        error instanceof ApiError
+          ? error.message
+          : '가상계좌 삭제에 실패했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsDeletingFolder(false);
+    }
+  }
+
   const subTab = subTabTransition.displayed;
   const hiddenNames = new Set(hiddenStocks.map((s) => s.name));
   const visibleHoldings = HOLDING_STOCKS.filter(
@@ -264,6 +311,7 @@ export default function AccountPage() {
               onSelectFolder={setSelectedFolderId}
               onOpenFolderModal={() => setShowFolderModal(true)}
               onOpenRenameModal={handleOpenRenameModal}
+              onOpenDeleteConfirm={handleOpenDeleteConfirm}
               onHide={handleStartHide}
               isLoadingFolders={isLoadingFolders}
               isLoadingHoldings={isLoadingHoldings}
@@ -312,6 +360,18 @@ export default function AccountPage() {
         title="가상계좌 이름 변경"
         confirmLabel="변경"
         submittingLabel="변경 중..."
+      />
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="가상계좌 삭제"
+        description={`'${deleteTargetLabel}' 계좌를 삭제할까요? 담긴 종목 정보도 함께 삭제되며, 되돌릴 수 없어요.`}
+        onCancel={handleCloseDeleteConfirm}
+        onConfirm={() => void handleDeleteFolder()}
+        error={deleteModalError}
+        isSubmitting={isDeletingFolder}
+        confirmLabel="삭제"
+        submittingLabel="삭제 중..."
       />
     </AppShell>
   );
