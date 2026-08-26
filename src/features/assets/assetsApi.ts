@@ -49,20 +49,8 @@ export interface VirtualAccountListResponse {
   maxCount: number;
 }
 
-const MOCK_VIRTUAL_ACCOUNTS: VirtualAccount[] = [
-  {
-    id: 12,
-    name: '안전형 투자',
-    sortOrder: 1,
-    createdAt: '2026-07-23T09:00:00Z',
-  },
-  {
-    id: 13,
-    name: '공격형 투자',
-    sortOrder: 2,
-    createdAt: '2026-07-23T09:00:00Z',
-  },
-];
+// 목업: 계좌를 만들기 전엔 목록이 비어 있어야 하므로 빈 배열로 시작한다.
+const MOCK_VIRTUAL_ACCOUNTS: VirtualAccount[] = [];
 
 const MOCK_PORTFOLIO_MAX_COUNT = 4;
 
@@ -102,37 +90,10 @@ export interface VirtualAccountDetail extends VirtualAccount {
   holdings: VirtualAccountHolding[];
 }
 
-// 목업: Notion 명세의 Success Response 예시(id 12)를 그대로 사용. 그 외 id는
-// 문서에 예시가 없어 "종목 없음" 빈 상태로 둔다.
-const MOCK_VIRTUAL_ACCOUNT_DETAILS: Record<number, VirtualAccountDetail> = {
-  12: {
-    id: 12,
-    name: '안전형 투자',
-    sortOrder: 1,
-    createdAt: '2026-07-23T09:00:00Z',
-    totalReturnRate: 8.12,
-    holdings: [
-      {
-        stockCode: '005930',
-        stockName: '삼성전자',
-        quantity: 30,
-        avgBuyPrice: 68_000,
-        currentPrice: 72_500,
-        evaluationAmount: 2_175_000,
-        unrealizedProfit: 135_000,
-        returnRate: 6.62,
-      },
-    ],
-  },
-};
-
 export async function getVirtualAccountDetail(
   portfolioId: number,
 ): Promise<VirtualAccountDetail> {
   if (USE_ASSETS_MOCK) {
-    const found = MOCK_VIRTUAL_ACCOUNT_DETAILS[portfolioId];
-    if (found) return Promise.resolve(found);
-
     const listed = MOCK_VIRTUAL_ACCOUNTS.find((a) => a.id === portfolioId);
     return Promise.resolve({
       id: portfolioId,
