@@ -11,11 +11,15 @@ import { AppShell } from '../components/AppShell';
 
 ## Props
 
-| prop               | 타입                                                        | 설명                                   |
-| ------------------ | ----------------------------------------------------------- | -------------------------------------- |
-| `activeNav`        | `'watchlist' \| 'popular' \| 'account' \| 'journal'` (선택) | 현재 기본 탭 하이라이트                |
-| `currentPageLabel` | `string` (선택)                                             | 기본 탭 오른쪽에 표시할 세부 화면 이름 |
-| `children`         | `ReactNode`                                                 | 네모 패널 안 페이지 UI                 |
+| prop                         | 타입                                                        | 설명                                   |
+| ---------------------------- | ----------------------------------------------------------- | -------------------------------------- |
+| `activeNav`                  | `'watchlist' \| 'popular' \| 'account' \| 'journal'` (선택) | 현재 기본 탭 하이라이트                |
+| `currentPageLabel`           | `string` (선택)                                             | 기본 탭 오른쪽에 표시할 세부 화면 이름 |
+| `children`                   | `ReactNode`                                                 | 네모 패널 안 페이지 UI                 |
+| `appBackgroundColor`         | `string` (선택)                                             | Figma 프레임별 외곽 배경색 보정        |
+| `pageSx` / `panelSx`         | MUI style object (선택)                                     | 페이지·패널의 화면별 레이아웃 보정     |
+| `navMarginLeft` / `navWidth` | `string \| number` (선택)                                   | 상단 탭의 화면별 위치·너비 보정        |
+| `hideMenuIcon`               | `boolean` (선택)                                            | 메뉴 자리를 유지하고 글리프만 숨김     |
 
 ## 예시
 

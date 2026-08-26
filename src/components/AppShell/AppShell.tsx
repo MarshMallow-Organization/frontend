@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import type { SystemStyleObject } from '@mui/system';
+import type { Theme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import IconButton from '@mui/material/IconButton';
@@ -83,6 +85,18 @@ export interface AppShellProps {
   currentPageLabel?: string;
   /** 네모 패널 안 페이지 콘텐츠 */
   children: ReactNode;
+  /** 화면별 외곽 배경색 보정 */
+  appBackgroundColor?: string;
+  /** 화면별 페이지 여백 보정 */
+  pageSx?: SystemStyleObject<Theme>;
+  /** 화면별 콘텐츠 패널 보정 */
+  panelSx?: SystemStyleObject<Theme>;
+  /** 화면별 상단 탭 간격 보정 */
+  navMarginLeft?: string;
+  /** Figma 기준 상단 탭 너비 */
+  navWidth?: number | string;
+  /** 메뉴 자리를 유지하면서 글리프만 숨김 */
+  hideMenuIcon?: boolean;
 }
 
 /**
@@ -93,12 +107,18 @@ export function AppShell({
   activeNav,
   currentPageLabel,
   children,
+  appBackgroundColor,
+  pageSx,
+  panelSx,
+  navMarginLeft,
+  navWidth,
+  hideMenuIcon = false,
 }: AppShellProps) {
   return (
     <Box
       sx={{
         minHeight: '100svh',
-        backgroundColor: color.bg,
+        backgroundColor: appBackgroundColor ?? color.bg,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -159,7 +179,8 @@ export function AppShell({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '12px',
-            ml: 'clamp(24px, 2.656vw, 51px)',
+            ml: navMarginLeft ?? 'clamp(24px, 2.656vw, 51px)',
+            width: navWidth,
             px: '18px',
             py: '11px',
             height: 74,
@@ -258,18 +279,22 @@ export function AppShell({
           }}
         />
 
-        <IconButton
-          aria-label="메뉴 열기"
-          sx={{
-            width: 46,
-            height: 46,
-            ml: '23px',
-            color: '#606060',
-            '& .MuiSvgIcon-root': { fontSize: 34 },
-          }}
-        >
-          <MenuRoundedIcon />
-        </IconButton>
+        {hideMenuIcon ? (
+          <Box aria-hidden sx={{ width: 46, height: 46, ml: '23px' }} />
+        ) : (
+          <IconButton
+            aria-label="메뉴 열기"
+            sx={{
+              width: 46,
+              height: 46,
+              ml: '23px',
+              color: '#606060',
+              '& .MuiSvgIcon-root': { fontSize: 34 },
+            }}
+          >
+            <MenuRoundedIcon />
+          </IconButton>
+        )}
 
         <ProfileMenu size={CHROME.avatar} marginLeft="15px" />
       </Box>
@@ -283,6 +308,7 @@ export function AppShell({
           px: PAGE.mx,
           pb: PAGE.mb,
           boxSizing: 'border-box',
+          ...pageSx,
         }}
       >
         <Box
@@ -302,6 +328,7 @@ export function AppShell({
             gap: 0,
             p: PANEL.pad,
             boxSizing: 'border-box',
+            ...panelSx,
           }}
         >
           {children}

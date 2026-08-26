@@ -17,19 +17,19 @@
 
 ## 현재 경로
 
-| 경로                                     | 화면            | 비고                          |
-| ---------------------------------------- | --------------- | ----------------------------- |
-| `/` 및 그 외 기본 경로                   | 로그인          | 명시적 404는 아직 없음        |
-| `/auth/google/callback`                  | Google 콜백     | `GOOGLE_CALLBACK_PATH` 사용   |
-| `/news*`                                 | 뉴스            | 인기종목 탭은 `/news/popular` |
-| `/journal`, `/trade-journal`, `#journal` | 매매일지        | 이전 경로 alias 포함          |
-| `/home`, `#home`                         | 홈              | hash는 이전 주소 alias        |
-| `/account`, `#account`                   | 내 계좌         | hash는 이전 주소 alias        |
-| `/stock`, `#stock`                       | 종목 상세       | hash는 이전 주소 alias        |
-| `/my-page`                               | 마이페이지      | 프로필 메뉴에서 진입          |
-| `/my-page/edit`                          | 내 정보 수정    | 더 구체적인 경로를 먼저 판별  |
-| `#preview`                               | 컴포넌트 프리뷰 | 개발자용                      |
-| `#verify=<key>`                          | 컴포넌트 검증   | 개발자용                      |
+| 경로                                     | 화면            | 비고                                          |
+| ---------------------------------------- | --------------- | --------------------------------------------- |
+| `/` 및 그 외 기본 경로                   | 로그인          | 명시적 404는 아직 없음                        |
+| `/auth/google/callback`                  | Google 콜백     | `GOOGLE_CALLBACK_PATH` 사용                   |
+| `/news*`                                 | 뉴스            | 인기종목 탭은 `/news/popular`                 |
+| `/journal`, `/trade-journal`, `#journal` | 매매일지        | 이전 경로 alias 포함                          |
+| `/home`, `#home`                         | 홈              | hash는 이전 주소 alias                        |
+| `/account`, `#account`                   | 내 계좌         | hash는 이전 주소 alias                        |
+| `/stock?stockCode=005930`, `#stock`      | 종목 상세       | 쿼리 생략 시 `005930`, hash는 이전 주소 alias |
+| `/my-page`                               | 마이페이지      | 프로필 메뉴에서 진입                          |
+| `/my-page/edit`                          | 내 정보 수정    | 더 구체적인 경로를 먼저 판별                  |
+| `#preview`                               | 컴포넌트 프리뷰 | 개발자용                                      |
+| `#verify=<key>`                          | 컴포넌트 검증   | 개발자용                                      |
 
 관심종목 탭은 실제 페이지가 없어 비활성 상태다. AppShell 홈 버튼은 `/home`, 내 계좌 탭은 `/account`로 이동한다.
 

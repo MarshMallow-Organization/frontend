@@ -71,6 +71,14 @@ export type ApiErrorResponse = {
 
 BUY 상세 응답에는 현재 `customGoalHoldPeriod`가 누락되어 있다. 프런트 타입은 필드를 선택적으로 수용하지만, 기존 CUSTOM 일기의 직접 입력값을 안정적으로 수정하려면 백엔드 상세 DTO와 매핑 보완이 필요하다.
 
+## 종목 상세 화면 연결
+
+- 종목명·코드·숨김 상태는 `GET /stocks/:stockCode`에서 조회한다.
+- 국내 6자리 종목의 관심 상태·등록·해제는 `GET/POST/DELETE /users/me/favorite-stocks` 계약을 사용한다.
+- 숨김 기간 설정은 `POST /users/me/hidden-stocks`에 ISO 날짜를 전달한다. 숨김 해제 API는 아직 없다.
+- 거래 팝업은 `POST /orders`에 일반/조건, 매수/매도, 시장가/지정가 선택을 전달한다.
+- Swagger에 시세·차트·재무 지표 응답 필드가 없고 뉴스·AI 생성 API도 없으므로 해당 영역은 요청하지 않고 미연동 상태로 표시한다.
+
 ## 도메인 지도
 
 | API 경로   | 책임                 |

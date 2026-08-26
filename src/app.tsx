@@ -16,6 +16,7 @@ import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 function App() {
   const [location, setLocation] = useState(() => ({
     pathname: window.location.pathname,
+    search: window.location.search,
     hash: window.location.hash,
   }));
 
@@ -23,6 +24,7 @@ function App() {
     const onChange = () =>
       setLocation({
         pathname: window.location.pathname,
+        search: window.location.search,
         hash: window.location.hash,
       });
 
@@ -72,7 +74,10 @@ function App() {
     return <AccountPage />;
   }
   if (location.pathname === '/stock' || location.hash === '#stock') {
-    return <StockDetailPage />;
+    const stockCodeQuery = new URLSearchParams(location.search).get(
+      'stockCode',
+    );
+    return <StockDetailPage stockCodeQuery={stockCodeQuery} />;
   }
   if (location.pathname === '/my-page/edit') return <MyPageEditPage />;
   if (location.pathname === '/my-page') return <MyPage />;
