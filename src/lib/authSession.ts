@@ -60,6 +60,17 @@ export function readSessionUser(): SessionUser {
   }
 }
 
+export function readSessionUserId(): number | null {
+  const id = readSessionUser().id;
+  const numericId = typeof id === 'string' ? Number(id) : id;
+
+  return typeof numericId === 'number' &&
+    Number.isSafeInteger(numericId) &&
+    numericId > 0
+    ? numericId
+    : null;
+}
+
 export function writeSessionUser(user: SessionUser): void {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 }

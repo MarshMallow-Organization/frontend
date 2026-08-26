@@ -1,3 +1,5 @@
+import { readSessionUserId } from './authSession';
+
 /**
  * NestJS 백엔드와 통신하는 얇은 타입 지원 fetch 래퍼.
  *
@@ -81,6 +83,12 @@ export async function apiFetch<T>(
   const accessToken = localStorage.getItem('accessToken');
   if (accessToken && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  if (import.meta.env.DEV && !headers.has('x-stub-user-id')) {
+    // 현재 백엔드 dev의 일부 API는 Bearer 토큰 대신 StubAuthGuard를 사용한다.
+    // 헤더를 생략하면 사용자 1로 처리되므로 세션 ID가 없을 때는 실패하도록 0을 보낸다.
+    headers.set('x-stub-user-id', String(readSessionUserId() ?? 0));
   }
 
   let response: Response;

@@ -37,6 +37,9 @@ import type {
 } from './types';
 
 const ACCOUNT_ACCENTS = ['#4E7CFF', '#FF8473', '#2FC4D1', '#A978E7'];
+const TWO_COLUMN_MEDIA =
+  '@media (min-width: 1500px) and (max-width: 1849.95px)';
+const THREE_COLUMN_MEDIA = '@media (min-width: 1850px)';
 
 function isAuthenticationError(error: unknown) {
   return (
@@ -234,13 +237,19 @@ export default function MyPage() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {
-              xs: 'minmax(0, 1fr)',
-              lg: 'repeat(2, minmax(0, 1fr))',
-              xl: 'minmax(0, 689fr) minmax(0, 696fr) minmax(0, 356fr)',
+            minWidth: 680,
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            columnGap: 2,
+            rowGap: 2,
+            [TWO_COLUMN_MEDIA]: {
+              gridTemplateColumns: 'repeat(2, minmax(660px, 1fr))',
             },
-            columnGap: { xs: 2, xl: '16.5px' },
-            rowGap: { xs: 2, xl: '23px' },
+            [THREE_COLUMN_MEDIA]: {
+              gridTemplateColumns:
+                'minmax(660px, 689fr) minmax(660px, 696fr) minmax(340px, 356fr)',
+              columnGap: '16.5px',
+              rowGap: '23px',
+            },
             alignItems: 'start',
           }}
         >
@@ -277,11 +286,16 @@ export default function MyPage() {
             sx={{
               display: 'grid',
               gap: { xs: 2, xl: '23px' },
-              gridColumn: { xs: 'auto', lg: '1 / -1', xl: 'auto' },
-              gridTemplateColumns: {
-                xs: 'minmax(0, 1fr)',
-                lg: 'minmax(260px, 0.65fr) minmax(360px, 1.35fr)',
-                xl: 'minmax(0, 1fr)',
+              gridColumn: 'auto',
+              gridTemplateColumns: 'minmax(0, 1fr)',
+              [TWO_COLUMN_MEDIA]: {
+                gridColumn: '1 / -1',
+                gridTemplateColumns:
+                  'minmax(260px, 0.65fr) minmax(360px, 1.35fr)',
+              },
+              [THREE_COLUMN_MEDIA]: {
+                gridColumn: 'auto',
+                gridTemplateColumns: 'minmax(0, 1fr)',
               },
             }}
           >

@@ -23,11 +23,7 @@ export default function FavoriteStocksCard({
   onRemove,
 }: FavoriteStocksCardProps) {
   const visibleStocks = stocks.slice(0, 4);
-  const skeletonCount = loading
-    ? 4
-    : visibleStocks.length > 0
-      ? Math.max(0, 4 - visibleStocks.length)
-      : 0;
+  const skeletonCount = loading ? 4 : 0;
 
   return (
     <BaseCard

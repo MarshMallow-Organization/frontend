@@ -1,7 +1,7 @@
 # 마이페이지 데이터 소스 현황
 
 > 상태: active
-> 최종 확인: 2026-08-22
+> 최종 확인: 2026-08-26
 > 근거: `http://localhost:3000/swagger-json`, `src/pages/my-page`, `src/features`
 
 이 문서는 마이페이지에서 실제 백엔드 API를 호출하는 값과 샘플 데이터로 표시하는 값을 구분한다. 화면 모양만으로 실제 데이터라고 판단하지 않는다.
@@ -15,7 +15,7 @@
 | 관심종목 해제       | `DELETE /users/me/favorite-stocks/{stockCode}` | API 목록을 표시 중일 때 실제 삭제 및 실패 롤백                     | 샘플 대체 중에는 현재 화면에서만 제거           |
 | 가상계좌 이름       | `GET /assets/portfolios`                       | 포트폴리오 id·이름·정렬된 목록                                     | `MOCK_VIRTUAL_ACCOUNTS`로 대체하고 경고 표시    |
 
-공통 `apiFetch`는 access token이 있으면 Bearer 헤더를 넣고, 쿠키를 포함하며, 성공 응답의 `{ data: T }`를 해제한다. 오류의 HTTP status, `code`, `message`, `traceId`도 보존한다.
+공통 `apiFetch`는 access token이 있으면 Bearer 헤더를 넣고, 쿠키를 포함하며, 성공 응답의 `{ data: T }`를 해제한다. 백엔드 `dev`에서 이 세 API가 아직 `StubAuthGuard`를 사용하므로 로컬 개발 빌드는 세션의 숫자 사용자 ID를 `x-stub-user-id`로 함께 전달한다. 세션 ID가 없으면 기본 사용자 데이터가 노출되지 않도록 유효하지 않은 `0`을 보내 401로 실패시킨다. 오류의 HTTP status, `code`, `message`, `traceId`도 보존한다.
 
 ## API 결과에 샘플 값을 보강하는 기능
 
