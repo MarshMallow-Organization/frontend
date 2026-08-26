@@ -17,12 +17,18 @@ export interface FolderModalProps {
   onChange: (v: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
-  /** 가상계좌 생성 API 에러 메시지 (400/409 등 서버 메시지를 그대로 표시). */
+  /** 가상계좌 생성/이름 변경 API 에러 메시지 (400/404/409 등 서버 메시지를 그대로 표시). */
   error?: string | null;
   isSubmitting?: boolean;
+  /** 모달 제목. 기본은 "폴더 추가"(생성), 이름 변경 시 다른 문구로 재사용한다. */
+  title?: string;
+  /** 완료 버튼 문구(대기 상태 아닐 때). */
+  confirmLabel?: string;
+  /** 완료 버튼 문구(제출 중일 때). */
+  submittingLabel?: string;
 }
 
-/** 가상 계좌 화면의 "폴더 추가" 모달. */
+/** 가상 계좌 화면의 "폴더 추가"/"이름 변경" 모달. */
 export function FolderModal({
   open,
   value,
@@ -31,6 +37,9 @@ export function FolderModal({
   onConfirm,
   error,
   isSubmitting = false,
+  title = '폴더 추가',
+  confirmLabel = '완료',
+  submittingLabel = '생성 중...',
 }: FolderModalProps) {
   return (
     <Dialog
@@ -55,7 +64,7 @@ export function FolderModal({
           <Typography
             sx={{ fontSize: '0.9375rem', fontWeight: 700, color: '#333' }}
           >
-            폴더 추가
+            {title}
           </Typography>
           <IconButton aria-label="닫기" onClick={onCancel} size="small">
             <CloseIcon fontSize="small" />
@@ -90,7 +99,7 @@ export function FolderModal({
             onClick={onConfirm}
             disabled={!value.trim() || isSubmitting}
           >
-            {isSubmitting ? '생성 중...' : '완료'}
+            {isSubmitting ? submittingLabel : confirmLabel}
           </Button>
         </Box>
       </DialogContent>

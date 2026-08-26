@@ -15,6 +15,7 @@ import {
   createVirtualAccount,
   getVirtualAccountDetail,
   getVirtualAccounts,
+  renameVirtualAccount,
 } from '../../features/assets/assetsApi';
 import { ApiError } from '../../lib/api';
 import { AssetStatusScreen } from './AssetStatusScreen';
@@ -56,6 +57,11 @@ export default function AccountPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [folderModalError, setFolderModalError] = useState<string | null>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
+  const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+  const [renameFolderName, setRenameFolderName] = useState('');
+  const [renameModalError, setRenameModalError] = useState<string | null>(null);
+  const [isRenamingFolder, setIsRenamingFolder] = useState(false);
 
   useEffect(() => {
     void getVirtualAccounts()
@@ -173,6 +179,47 @@ export default function AccountPage() {
     }
   }
 
+  function handleOpenRenameModal(folderId: string) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    setRenameTargetId(folderId);
+    setRenameFolderName(folder.label);
+    setRenameModalError(null);
+  }
+
+  function handleCloseRenameModal() {
+    setRenameTargetId(null);
+    setRenameModalError(null);
+  }
+
+  async function handleRenameFolder() {
+    const name = renameFolderName.trim();
+    if (!name || !renameTargetId) return;
+
+    const portfolioId = Number(renameTargetId);
+    if (!Number.isFinite(portfolioId)) return;
+
+    setIsRenamingFolder(true);
+    setRenameModalError(null);
+    try {
+      const updated = await renameVirtualAccount(portfolioId, name);
+      setFolders((prev) =>
+        prev.map((f) =>
+          f.id === renameTargetId ? { ...f, label: updated.name } : f,
+        ),
+      );
+      setRenameTargetId(null);
+    } catch (error) {
+      setRenameModalError(
+        error instanceof ApiError
+          ? error.message
+          : '가상계좌 이름 변경에 실패했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsRenamingFolder(false);
+    }
+  }
+
   const subTab = subTabTransition.displayed;
   const hiddenNames = new Set(hiddenStocks.map((s) => s.name));
   const visibleHoldings = HOLDING_STOCKS.filter(
@@ -216,6 +263,7 @@ export default function AccountPage() {
               selectedFolderId={selectedFolderId}
               onSelectFolder={setSelectedFolderId}
               onOpenFolderModal={() => setShowFolderModal(true)}
+              onOpenRenameModal={handleOpenRenameModal}
               onHide={handleStartHide}
               isLoadingFolders={isLoadingFolders}
               isLoadingHoldings={isLoadingHoldings}
@@ -251,6 +299,19 @@ export default function AccountPage() {
         onConfirm={() => void handleAddFolder()}
         error={folderModalError}
         isSubmitting={isCreatingFolder}
+      />
+
+      <FolderModal
+        open={renameTargetId !== null}
+        value={renameFolderName}
+        onChange={setRenameFolderName}
+        onCancel={handleCloseRenameModal}
+        onConfirm={() => void handleRenameFolder()}
+        error={renameModalError}
+        isSubmitting={isRenamingFolder}
+        title="가상계좌 이름 변경"
+        confirmLabel="변경"
+        submittingLabel="변경 중..."
       />
     </AppShell>
   );

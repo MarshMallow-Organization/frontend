@@ -147,3 +147,35 @@ export async function getVirtualAccountDetail(
     `${VIRTUAL_ACCOUNTS_PATH}/${portfolioId}`,
   );
 }
+
+/**
+ * PATCH /assets/portfolios/{portfolioId} 응답 (Notion "assets | 자산현황 · 가상계좌
+ * 이름 변경" 명세, 2026-08-24 기준). 이름 중복 시 409, 필수값 누락 시 400,
+ * 존재하지 않는 계좌면 404로 백엔드가 검증한다 — backend/src/domains/assets/
+ * controllers/portfolios.controller.ts에 실제로 구현돼 있다.
+ */
+export interface VirtualAccountNameUpdate {
+  id: number;
+  name: string;
+  updatedAt: string;
+}
+
+export async function renameVirtualAccount(
+  portfolioId: number,
+  name: string,
+): Promise<VirtualAccountNameUpdate> {
+  if (USE_ASSETS_MOCK) {
+    return Promise.resolve({
+      id: portfolioId,
+      name,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  return apiFetch<VirtualAccountNameUpdate>(
+    `${VIRTUAL_ACCOUNTS_PATH}/${portfolioId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    },
+  );
+}

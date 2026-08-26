@@ -1,6 +1,8 @@
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import { BaseCard } from '../../components/BaseCard';
 import { Chip } from '../../components/Chip';
 import type { HoldingStock, InvestmentFolder } from '../../types/account';
@@ -14,6 +16,8 @@ export interface VirtualAccountScreenProps {
   selectedFolderId: string;
   onSelectFolder: (id: string) => void;
   onOpenFolderModal: () => void;
+  /** 선택된 가상계좌의 이름 변경 모달을 연다. */
+  onOpenRenameModal: (folderId: string) => void;
   onHide: (stockName: string) => void;
   /** true면 가상계좌 목록(GET /assets/portfolios)을 아직 불러오는 중. */
   isLoadingFolders?: boolean;
@@ -128,6 +132,7 @@ export function VirtualAccountScreen({
   selectedFolderId,
   onSelectFolder,
   onOpenFolderModal,
+  onOpenRenameModal,
   onHide,
   isLoadingFolders = false,
   isLoadingHoldings = false,
@@ -189,16 +194,31 @@ export function VirtualAccountScreen({
         </Box>
 
         {selected && (
-          <Typography
+          <Box
             sx={{
-              fontSize: '1rem',
-              fontWeight: 700,
-              color: color.ink,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
               mb: 1.5,
             }}
           >
-            {selected.label}
-          </Typography>
+            <Typography
+              sx={{
+                fontSize: '1rem',
+                fontWeight: 700,
+                color: color.ink,
+              }}
+            >
+              {selected.label}
+            </Typography>
+            <IconButton
+              aria-label="가상계좌 이름 변경"
+              size="small"
+              onClick={() => onOpenRenameModal(selected.id)}
+            >
+              <EditIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
         )}
 
         {!selected || selected.holdings.length === 0 ? (
