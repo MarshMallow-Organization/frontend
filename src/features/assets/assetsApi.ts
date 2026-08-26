@@ -68,10 +68,11 @@ export async function getVirtualAccounts(): Promise<VirtualAccountListResponse> 
  * GET /assets/portfolios/{portfolioId} 응답 (Notion "assets | 자산현황 · 특정
  * 가상계좌 조회" 명세, 2026-08-24 기준).
  *
- * ⚠️ 백엔드 미구현: `portfolios.controller.ts`에는 GET(':portfolioId') 핸들러가
- * 없다 (목록 조회 GET()만 있음) — holdings·totalReturnRate를 담은 응답 DTO도
- * 없다. 이 함수는 지금 항상 mock을 반환하며, 백엔드에 엔드포인트가 생기면
- * USE_ASSETS_MOCK을 끄고 그대로 실 API를 타게 된다.
+ * backend/src/domains/assets/controllers/portfolios.controller.ts의
+ * findPortfolioDetail에 실제로 구현돼 있다 — 계좌에 등록된 종목을 실제
+ * 보유 데이터(HoldingsProvider)와 대조해 1주 이상 보유 중인 것만 골라
+ * 평가금액·손익·수익률을 계산해 내려준다. USE_ASSETS_MOCK을 끄면 이
+ * 실 API를 탄다.
  */
 export interface VirtualAccountHolding {
   stockCode: string;
