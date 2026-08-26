@@ -168,8 +168,9 @@ export function TradeDialog({
           sx: {
             width: 700,
             maxWidth: 'calc(100vw - 32px)',
-            minHeight: { xs: 680, sm: 810 },
+            height: { xs: 'min(810px, calc(100vh - 32px))', sm: 810 },
             m: 2,
+            boxSizing: 'border-box',
             borderRadius: { xs: '32px', sm: '50px' },
             border: `1px solid ${color.stockDialogBorder}`,
             boxShadow: '0 0 3px rgba(0,0,0,0.3)',
@@ -179,17 +180,17 @@ export function TradeDialog({
         },
       }}
     >
-      <DialogContent sx={{ position: 'relative', p: 0, minHeight: 'inherit' }}>
+      <DialogContent sx={{ position: 'relative', height: '100%', p: 0 }}>
         <ButtonBase
           aria-label="거래 팝업 닫기"
           onClick={handleClose}
           disabled={submitting}
           sx={{
             position: 'absolute',
-            top: 38,
-            right: 39,
-            width: 36,
-            height: 36,
+            top: 39,
+            right: 40,
+            width: 30,
+            height: 30,
           }}
         >
           <Box
@@ -204,7 +205,7 @@ export function TradeDialog({
           id="trade-dialog-title"
           component="h2"
           sx={{
-            pt: '74px',
+            pt: '80px',
             textAlign: 'center',
             color: color.ink,
             fontSize: { xs: '32px', sm: '40px' },
@@ -216,7 +217,7 @@ export function TradeDialog({
         </Typography>
         <Typography
           sx={{
-            mt: '3px',
+            mt: '8px',
             textAlign: 'center',
             color: color.subtleText,
             fontSize: { xs: '18px', sm: '23px' },
@@ -231,10 +232,10 @@ export function TradeDialog({
               role="radiogroup"
               aria-label="거래 방식"
               sx={{
-                mt: '76px',
+                mt: '74px',
                 mx: { xs: 3, sm: '70px' },
                 display: 'grid',
-                gap: '16px',
+                gap: '17px',
               }}
             >
               {OPTIONS.map((option) => {
@@ -280,6 +281,7 @@ export function TradeDialog({
                           fontSize: '18px',
                           lineHeight: '20px',
                           whiteSpace: 'pre-line',
+                          width: option.id === 'GENERAL' ? 163 : 199,
                         }}
                       >
                         {option.description}
@@ -304,7 +306,7 @@ export function TradeDialog({
             <Box
               sx={{
                 position: 'absolute',
-                left: { xs: 24, sm: 65 },
+                left: { xs: 24, sm: 64 },
                 right: { xs: 24, sm: 65 },
                 bottom: 60,
               }}
@@ -313,7 +315,15 @@ export function TradeDialog({
                 fullWidth
                 disabled={!category}
                 onClick={() => setStep('order')}
-                sx={{ height: 61, borderRadius: '15px', fontSize: '22px' }}
+                sx={{
+                  height: 61,
+                  borderRadius: '15px',
+                  fontSize: '22px',
+                  '&.Mui-disabled': {
+                    color: color.white,
+                    backgroundColor: color.primary,
+                  },
+                }}
               >
                 다음
               </Button>
