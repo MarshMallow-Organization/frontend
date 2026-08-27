@@ -99,6 +99,28 @@ export const tokens = {
     stockMetricPurpleBg: '#f2ecff',
     stockDialogBorder: '#d4d4d4',
     stockDialogOptionBorder: '#b9b9b9',
+    // 거래 팝업 리디자인 (Figma 834:7454 시장가 / 834:6742 지정가)
+    tradePanelBorder: '#c5c5c5', // 종목정보·주문내역·호가창·주문 패널 카드 보더
+    tradeSubCardBg: '#f5f5f5', // 주문 수량 / 예상 금액 내부 카드
+    tradeSubCardBorder: '#dadada',
+    tradeFieldBorder: '#cbcbcb', // 수량·호가 입력 박스 / 스테퍼 버튼
+    tradeEmptyText: '#bbbbbb', // 주문 내역 없음 안내 문구
+    tradeColHeader: '#646464', // 호가창 컬럼 헤더 (가격/수량)
+    tradeAskBg: '#fff2f2', // 매도 호가 배경
+    tradeAskText: '#ff6363',
+    tradeBidBg: '#f0f8ff', // 매수 호가 배경
+    tradeBidText: '#2097ff',
+    tradeQtyCellBg: '#f5f5f5', // 호가창 수량 셀 배경
+    tradeCurrentPrice: '#11acd0', // 호가창 현재가
+    tradeBuyBg: '#defcff', // 시장가 매수 버튼
+    tradeBuyBorder: '#02626a',
+    tradeBuyText: '#02626a',
+    tradeSellBg: '#ebffed', // 시장가 매도 버튼
+    tradeSellBorder: '#00a30e',
+    tradeSellText: '#006208',
+    tradeTabActive: '#2fc4d1', // 시장가/지정가 활성 탭
+    tradeTabInactive: '#b6b6b6',
+    tradeSubLabel: '#777777', // 판매/구매 가능 수량 라벨
   },
   radius: 8, // buttons (14:359)
   radiusField: 10, // chips & filled search fields (17:441 / 16:395)
