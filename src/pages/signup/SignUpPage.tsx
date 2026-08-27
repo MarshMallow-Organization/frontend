@@ -36,8 +36,9 @@ const API_BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
 const GOOGLE_OAUTH_URL = `${API_BASE}/auth/google`;
 
 // Figma 주석(356:1893): 가입 완료 후 API Key 등록 화면으로 이동. Google OAuth도 동일.
-// 해당 화면과 app.tsx 분기가 아직 없어 지금은 로그인으로 폴백된다.
-const AFTER_SIGNUP_PATH = '/api-key';
+// 경로에 '/api-key'를 쓰면 vite 프록시('/api' 접두사)에 걸려 dev 서버가
+// index.html 대신 백엔드로 프록시하므로 '/register-key'를 쓴다.
+const AFTER_SIGNUP_PATH = '/register-key';
 
 // 356:1897~1904 — 라벨 top에서 밑줄까지 63px. 이 높이가 곧 카드 높이(344px)를
 // 결정하므로, 공용 TextField의 label prop(20px 줄 높이) 대신 라벨을 직접 그린다.
