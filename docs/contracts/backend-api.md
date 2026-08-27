@@ -1,7 +1,7 @@
 # Backend API Contract
 
 > 상태: active
-> 최종 확인: 2026-08-21
+> 최종 확인: 2026-08-27
 > 근거: `../backend/src/docs/common-response.md`, `../backend/src/docs/swagger-api.md`, `../backend/src/domains/domain.md`, `src/lib/api.ts`
 
 API 구현 전에는 실행 중인 백엔드의 Swagger UI(`/swagger`) 또는 OpenAPI JSON(`/swagger-json`)과 관련 DTO를 확인한다. 이 문서는 공통 규칙의 요약이며 실제 Swagger가 최종 계약이다.
@@ -44,7 +44,21 @@ export type ApiErrorResponse = {
 
 ## 공통 래퍼 동작
 
-`src/lib/api.ts`는 정상 응답의 `{ data: T }`를 풀어서 `T`를 반환한다. 오류에서는 HTTP `status`와 서버의 `code`, `message`, `traceId`를 `ApiError`에 보존한다. `204`, 비 JSON 응답, 잘못된 JSON, 요청 취소, 네트워크 단절도 공통 계층에서 구분한다.
+`src/lib/api.ts`는 정상 응답의 `{ data: T }`를 풀어서 `T`를 반환한다. access token이 있으면 `Authorization: Bearer`를 붙이고 `credentials: 'include'`를 기본값으로 써서 refresh 쿠키를 받는다. 오류에서는 HTTP `status`와 서버의 `code`, `message`, `traceId`를 `ApiError`에 보존한다. `204`, 비 JSON 응답, 잘못된 JSON, 요청 취소, 네트워크 단절도 공통 계층에서 구분한다.
+
+## 인증
+
+현재 `dev` 백엔드에서 프론트가 쓰는 계약은 이메일 가입·로그인이다.
+
+| 화면 동작 | API | 비고 |
+| --- | --- | --- |
+| 이메일 로그인 | `POST /auths/login` | `{ email, password }` → `{ accessToken }`, refresh는 httpOnly 쿠키 |
+| 회원가입 | `POST /auths/signup` | `{ email, password, name }` → 동일. password 8자 이상 |
+| 세션 사용자 | `GET /auths/me` | `Authorization: Bearer` → 현재는 `{ id }` 중심. email/name 확장은 백엔드 후속 |
+
+Google 시작은 프론트가 `accounts.google.com`으로 보낸다. 콜백 경로는 `/auth/google/callback`이다. 백엔드 `POST /auths/google`과 토스 키 저장 `POST /users/me/toss-account`는 아직 없으므로 후속 작업이다. 예전 경로 `/auth/google`(단수)는 쓰지 않는다.
+
+회원가입 성공 후에는 `/register-key` 화면으로 이동한다. 키 등록 API가 붙기 전에는 화면 안내와 건너뛰기만 동작한다.
 
 ## 페이지네이션·필터 공통 기준
 

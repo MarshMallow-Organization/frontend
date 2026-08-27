@@ -1,11 +1,15 @@
 /**
  * NestJS 백엔드와 통신하는 얇은 타입 지원 fetch 래퍼.
  *
- * - 개발 환경: `VITE_API_URL`을 비워두면 `/api` 경로로 요청하며,
- *   Vite dev-server 프록시(vite.config.ts)가 백엔드로 전달합니다.
- * - 운영 환경: `VITE_API_URL`에 배포된 백엔드 주소를 지정합니다.
+ * - `VITE_API_URL`이 없거나 비어 있으면 `/api`로 요청하고,
+ *   Vite 프록시(vite.config.ts)가 http://localhost:3000 으로 넘긴다.
+ * - 백엔드를 다른 포트(예: 3001)에서 띄우면 `.env`에
+ *   `VITE_API_URL=http://localhost:3001` 을 넣는다.
  */
-const BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
+import { getAccessToken } from './authSession';
+
+const configuredApiUrl = import.meta.env?.VITE_API_URL?.trim();
+const BASE_URL = (configuredApiUrl || '/api').replace(/\/$/, '');
 
 export interface ApiResponse<T> {
   data: T;
@@ -84,9 +88,18 @@ export async function apiFetch<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  const accessToken = getAccessToken();
+  if (accessToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
   let response: Response;
   try {
-    response = await fetch(url, { ...init, headers });
+    response = await fetch(url, {
+      ...init,
+      credentials: init?.credentials ?? 'include',
+      headers,
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error;

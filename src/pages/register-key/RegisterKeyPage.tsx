@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -6,8 +6,15 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
-import { tokens } from '../../theme/tokens';
+import { registerTossAccount } from '../../features/auth/authApi';
+import { ApiError } from '../../lib/api';
+import {
+  AFTER_LOGIN_PATH,
+  hasAccessToken,
+  markTossApiConnected,
+} from '../../lib/authSession';
 import { navigate } from '../../lib/navigation';
+import { tokens } from '../../theme/tokens';
 
 const { color } = tokens;
 
@@ -34,22 +41,52 @@ const FORM_PANE_BG = [
  * 오른쪽인 로그인 화면과 동일한 배치다. 바깥 레이아웃(페이지 여백, 유리 바탕,
  * pane 비율, 브랜드 영역)은 LoginPage.tsx와 같은 값을 쓰므로 한쪽만 고치지 않는다.
  *
- * 주의: 시안 주석에 따르면 이 화면은 최초 사용자에게만 노출된다. 노출 조건은
- * 백엔드 계약(사용자 API Key 등록 여부)이 확정된 뒤 라우팅 단에서 처리한다.
+ * 키가 없는 세션은 로그인·구글 콜백 이후에도 이 화면으로 온다.
+ * 등록 또는 건너뛰기 후에만 `/home`으로 간다.
  */
 export default function RegisterKeyPage() {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!hasAccessToken()) {
+      navigate('/');
+    }
+  }, []);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: 백엔드에 API Key 등록 엔드포인트가 생기면
-    // features/auth/authApi.ts에 registerApiKey를 추가해 연결한다.
-    // (회원가입 브랜치에서 만든 authApi를 그대로 확장하면 된다.)
+    const trimmedKey = apiKey.trim();
+    const trimmedSecret = apiSecret.trim();
+    if (!trimmedKey || !trimmedSecret) {
+      setError('API Key와 API Secret을 모두 입력해 주세요.');
+      return;
+    }
+
+    setError('');
+    setSubmitting(true);
+    try {
+      await registerTossAccount({
+        apiKey: trimmedKey,
+        secretKey: trimmedSecret,
+      });
+      markTossApiConnected();
+      navigate(AFTER_LOGIN_PATH);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'API Key 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSkip = () => {
-    navigate('/home');
+    navigate(AFTER_LOGIN_PATH);
   };
 
   return (
@@ -60,7 +97,6 @@ export default function RegisterKeyPage() {
         p: { xs: '3vh 4vw', md: '5.5vh 4.5vw' },
         background:
           'linear-gradient(135deg, #eef6ff 0%, #f7f2ff 50%, #eafcff 100%)',
-        // 회원가입 브랜치와 동일: 매우 큰 화면에서도 배경이 계속 적용됨
         minWidth: '100vw',
       }}
     >
@@ -76,7 +112,6 @@ export default function RegisterKeyPage() {
           boxShadow: '0 24px 70px rgba(60, 80, 120, 0.18)',
         }}
       >
-        {/* left: form pane (782:4368 유리 바탕 좌측 영역) */}
         <Box
           sx={{
             position: 'relative',
@@ -92,20 +127,22 @@ export default function RegisterKeyPage() {
         >
           <Stack
             component="form"
-            onSubmit={handleSubmit}
+            onSubmit={(event) => {
+              void handleSubmit(event);
+            }}
+            noValidate
             sx={{
               position: 'relative',
               width: 'min(100%, 625px)',
               px: 4,
               alignItems: 'center',
-              // 시안 세로 리듬이 균일하지 않아 gap 대신 요소별 여백을 쓴다.
               gap: 0,
             }}
           >
             <Typography
               component="h1"
               sx={{
-                mb: '41px', // 제목 하단 → 안내문 (782:4389 → 782:4444)
+                mb: '41px',
                 fontSize: 'clamp(32px, 4.5vw, 55px)',
                 fontWeight: 500,
                 color: color.loginTitle,
@@ -116,7 +153,7 @@ export default function RegisterKeyPage() {
 
             <Typography
               sx={{
-                mb: '41px', // 안내문 → API Key 라벨 (782:4444 → 782:4392)
+                mb: '41px',
                 width: '100%',
                 fontSize: 'clamp(14px, 1.1vw, 20px)',
                 lineHeight: 1.5,
@@ -151,6 +188,7 @@ export default function RegisterKeyPage() {
                 onChange={(e) => setApiKey(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
+                disabled={submitting}
               />
               <TextField
                 appVariant="pill"
@@ -162,32 +200,51 @@ export default function RegisterKeyPage() {
                 onChange={(e) => setApiSecret(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
+                disabled={submitting}
               />
             </Stack>
+
+            {error !== '' && (
+              <Typography
+                role="alert"
+                sx={{
+                  alignSelf: 'flex-start',
+                  mt: '16px',
+                  fontSize: 15,
+                  color: color.signupRequired,
+                }}
+              >
+                {error}
+              </Typography>
+            )}
 
             <Button
               appVariant="filled"
               type="submit"
               fullWidth
+              disabled={submitting}
               sx={{
-                mt: '119px', // API Secret 하단 → 등록 버튼 (782:4394 → 782:4403)
+                mt: error !== '' ? '24px' : '119px',
                 height: 63,
                 borderRadius: '50px',
-                fontSize: 30, // 782:4404
+                fontSize: 30,
                 fontWeight: 500,
                 boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
               }}
             >
-              등록
+              {submitting ? '등록 중…' : '등록'}
             </Button>
 
             <Link
               component="button"
               type="button"
-              onClick={handleSkip}
+              onClick={() => {
+                if (submitting) return;
+                handleSkip();
+              }}
               underline="hover"
               sx={{
-                mt: '34px', // 등록 버튼 → 나중에 등록하기 (782:4403 → 782:4398)
+                mt: '34px',
                 color: color.loginLink,
                 fontSize: 17,
               }}
@@ -197,13 +254,12 @@ export default function RegisterKeyPage() {
           </Stack>
         </Box>
 
-        {/* right: brand pane (782:4377) — 로그인 화면과 동일 구성 */}
         <Stack
           sx={{
             flex: '1 1 38%',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: '23px', // web site name → wordmark (782:4379→4405)
+            gap: '23px',
             px: 'clamp(24px, 5vw, 64px)',
             py: { xs: 6, md: 0 },
             pb: { xs: 6, md: '88px' },
@@ -216,8 +272,8 @@ export default function RegisterKeyPage() {
           <Typography
             sx={{
               fontFamily: "'Buffy', Georgia, serif",
-              fontWeight: 400, // Buffy에는 Bold 웨이트가 없다
-              fontSize: 'clamp(28px, 3.2vw, 50px)', // 782:4405 = 50px
+              fontWeight: 400,
+              fontSize: 'clamp(28px, 3.2vw, 50px)',
               color: color.loginWordmark,
             }}
           >

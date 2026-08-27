@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import Box from '@mui/material/Box';
 import MuiButton from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -8,7 +8,15 @@ import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
 import { tokens } from '../../theme/tokens';
 import googleLogo from '../../assets/icons/google.svg';
+import { persistAuthSession, login } from '../../features/auth/authApi';
+import { ApiError } from '../../lib/api';
 import { redirectToGoogle } from '../../lib/googleAuth';
+import {
+  AFTER_LOGIN_PATH,
+  destinationAfterAuth,
+  hasAccessToken,
+  readSessionUser,
+} from '../../lib/authSession';
 import { navigate } from '../../lib/navigation';
 
 const { color } = tokens;
@@ -27,9 +35,56 @@ const FORM_PANE_BG = [
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!hasAccessToken()) return;
+    const user = readSessionUser();
+    navigate(user ? destinationAfterAuth(user) : AFTER_LOGIN_PATH);
+  }, []);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setError('이메일과 비밀번호를 입력해 주세요.');
+      return;
+    }
+
+    setError('');
+    setSubmitting(true);
+    try {
+      const { accessToken } = await login({
+        email: trimmedEmail,
+        password,
+      });
+      const user = await persistAuthSession(accessToken, {
+        email: trimmedEmail,
+        name: trimmedEmail.split('@')[0],
+      });
+      navigate(destinationAfterAuth(user));
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleGoogleLogin = () => {
-    redirectToGoogle();
+    try {
+      redirectToGoogle();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Google 로그인을 시작하지 못했습니다.',
+      );
+    }
   };
 
   return (
@@ -72,7 +127,10 @@ export default function LoginPage() {
         >
           <Stack
             component="form"
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={(event) => {
+              void handleSubmit(event);
+            }}
+            noValidate
             sx={{
               position: 'relative',
               width: 'min(100%, 625px)',
@@ -116,10 +174,24 @@ export default function LoginPage() {
               />
             </Stack>
 
+            {error !== '' && (
+              <Typography
+                role="alert"
+                sx={{
+                  mt: '18px',
+                  fontSize: 15,
+                  color: '#d45555',
+                }}
+              >
+                {error}
+              </Typography>
+            )}
+
             <Button
               appVariant="filled"
               type="submit"
               fullWidth
+              disabled={submitting}
               sx={{
                 mt: '119px', // password field bottom → button (92:649→658 exact)
                 height: 63,
@@ -129,7 +201,7 @@ export default function LoginPage() {
                 boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
               }}
             >
-              로그인
+              {submitting ? '로그인 중…' : '로그인'}
             </Button>
 
             <Stack
@@ -185,6 +257,7 @@ export default function LoginPage() {
             <MuiButton
               type="button"
               onClick={handleGoogleLogin}
+              disabled={submitting}
               disableElevation
               sx={{
                 mt: '27px', // links → 간편로그인 (341:3855→782:4358)
