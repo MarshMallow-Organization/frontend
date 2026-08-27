@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -37,9 +37,12 @@ import type {
 } from './types';
 
 const ACCOUNT_ACCENTS = ['#4E7CFF', '#FF8473', '#2FC4D1', '#A978E7'];
-const TWO_COLUMN_MEDIA =
-  '@media (min-width: 1500px) and (max-width: 1849.95px)';
-const THREE_COLUMN_MEDIA = '@media (min-width: 1850px)';
+
+// Figma 98:1107 3열 카드 그리드의 원본 치수(689+696+356 + 16.5px 간격 x2, 최대 카드 열 높이).
+// 실제 뷰포트 폭에 맞춰 이 캔버스를 통째로 축소/확대해 뷰포트가 좁아져도 Figma 비율을 그대로 유지한다.
+const GRID_DESIGN_WIDTH = 1774;
+const GRID_DESIGN_HEIGHT = 801;
+const GRID_MIN_SCALE = 0.55;
 
 function isAuthenticationError(error: unknown) {
   return (
@@ -75,6 +78,24 @@ export default function MyPage() {
   const [removingCode, setRemovingCode] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const user = useMemo(() => readSessionUser(), []);
+  const gridScaleRef = useRef<HTMLDivElement>(null);
+  const [gridScale, setGridScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = gridScaleRef.current;
+    if (!el) return;
+    const updateScale = () => {
+      const available = el.clientWidth;
+      if (available <= 0) return;
+      setGridScale(
+        Math.min(1, Math.max(GRID_MIN_SCALE, available / GRID_DESIGN_WIDTH)),
+      );
+    };
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -234,73 +255,51 @@ export default function MyPage() {
             로그인 정보가 만료되었거나 이 데이터에 접근할 권한이 없습니다.
           </Alert>
         )}
-        <Box
-          sx={{
-            display: 'grid',
-            minWidth: 680,
-            gridTemplateColumns: 'minmax(0, 1fr)',
-            columnGap: 2,
-            rowGap: 2,
-            [TWO_COLUMN_MEDIA]: {
-              gridTemplateColumns: 'repeat(2, minmax(660px, 1fr))',
-            },
-            [THREE_COLUMN_MEDIA]: {
-              gridTemplateColumns:
-                'minmax(660px, 689fr) minmax(660px, 696fr) minmax(340px, 356fr)',
-              columnGap: '16.5px',
-              rowGap: '23px',
-            },
-            alignItems: 'start',
-          }}
-        >
+        <Box ref={gridScaleRef} sx={{ width: '100%', overflowX: 'auto' }}>
           <Box
             sx={{
-              display: 'grid',
-              gap: { xs: 2, xl: '24px' },
-              mt: { xs: 0, xl: '2px' },
+              width: GRID_DESIGN_WIDTH * gridScale,
+              height: GRID_DESIGN_HEIGHT * gridScale,
             }}
           >
-            <ProfileCard user={user} />
-            <DiaryActivityCard
-              diaries={diaries}
-              loading={loading}
-              year={diaryYear}
-              onYearChange={(year) => {
-                setLoading(true);
-                setDiaryYear(year);
+            <Box
+              sx={{
+                width: GRID_DESIGN_WIDTH,
+                transform: `scale(${gridScale})`,
+                transformOrigin: 'top left',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '16.5px',
               }}
-            />
-          </Box>
+            >
+              <Box sx={{ width: 689, display: 'grid', gap: '24px' }}>
+                <ProfileCard user={user} />
+                <DiaryActivityCard
+                  diaries={diaries}
+                  loading={loading}
+                  year={diaryYear}
+                  onYearChange={(year) => {
+                    setLoading(true);
+                    setDiaryYear(year);
+                  }}
+                />
+              </Box>
 
-          <Box sx={{ display: 'grid', gap: { xs: 2, xl: '23px' } }}>
-            <VirtualAccountCard accounts={accounts} loading={loading} />
-            <FavoriteStocksCard
-              stocks={favorites}
-              loading={loading}
-              removingCode={removingCode}
-              onRemove={(stock) => void handleRemoveFavorite(stock)}
-            />
-          </Box>
+              <Box sx={{ width: 696, display: 'grid', gap: '23px' }}>
+                <VirtualAccountCard accounts={accounts} loading={loading} />
+                <FavoriteStocksCard
+                  stocks={favorites}
+                  loading={loading}
+                  removingCode={removingCode}
+                  onRemove={(stock) => void handleRemoveFavorite(stock)}
+                />
+              </Box>
 
-          <Box
-            sx={{
-              display: 'grid',
-              gap: { xs: 2, xl: '23px' },
-              gridColumn: 'auto',
-              gridTemplateColumns: 'minmax(0, 1fr)',
-              [TWO_COLUMN_MEDIA]: {
-                gridColumn: '1 / -1',
-                gridTemplateColumns:
-                  'minmax(260px, 0.65fr) minmax(360px, 1.35fr)',
-              },
-              [THREE_COLUMN_MEDIA]: {
-                gridColumn: 'auto',
-                gridTemplateColumns: 'minmax(0, 1fr)',
-              },
-            }}
-          >
-            <UsageSummaryCard summary={MOCK_USAGE_SUMMARY} />
-            <RecentOrdersCard orders={MOCK_RECENT_ORDERS} />
+              <Box sx={{ width: 356, display: 'grid', gap: '23px' }}>
+                <UsageSummaryCard summary={MOCK_USAGE_SUMMARY} />
+                <RecentOrdersCard orders={MOCK_RECENT_ORDERS} />
+              </Box>
+            </Box>
           </Box>
         </Box>
       </Box>

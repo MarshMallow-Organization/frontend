@@ -135,16 +135,20 @@ export default function RecentOrdersCard({ orders }: RecentOrdersCardProps) {
                 sx={{
                   mt: 1.55,
                   display: 'grid',
-                  gridTemplateColumns: '72px 1px 52px 1fr',
+                  gridTemplateColumns: '72px 1px 52px minmax(max-content, 1fr)',
                   alignItems: 'center',
                   gap: 1.5,
                 }}
               >
-                <Typography sx={{ fontSize: 13, color: '#222222' }}>
+                <Typography
+                  sx={{ fontSize: 13, color: '#222222', whiteSpace: 'nowrap' }}
+                >
                   {number.format(order.price)}원
                 </Typography>
                 <Box sx={{ width: '1px', height: 17, bgcolor: '#E1E1E1' }} />
-                <Typography sx={{ fontSize: 13, color: '#222222' }}>
+                <Typography
+                  sx={{ fontSize: 13, color: '#222222', whiteSpace: 'nowrap' }}
+                >
                   {number.format(order.quantity)}주
                 </Typography>
                 <Typography
@@ -152,6 +156,7 @@ export default function RecentOrdersCard({ orders }: RecentOrdersCardProps) {
                     fontSize: 16,
                     fontWeight: 650,
                     textAlign: 'right',
+                    whiteSpace: 'nowrap',
                     color,
                   }}
                 >
