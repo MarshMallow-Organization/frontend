@@ -15,6 +15,12 @@ export interface VirtualAccountScreenProps {
   onSelectFolder: (id: string) => void;
   onOpenFolderModal: () => void;
   onHide: (stockName: string) => void;
+  /** true면 가상계좌 목록(GET /assets/portfolios)을 아직 불러오는 중. */
+  isLoadingFolders?: boolean;
+  /** true면 선택된 계좌의 보유 종목(GET /assets/portfolios/{id})을 아직 불러오는 중. */
+  isLoadingHoldings?: boolean;
+  /** 가상계좌 최대 개수(maxCount)에 도달해 "폴더 추가"를 막아야 하는지. */
+  disableAddFolder?: boolean;
 }
 
 const TREEMAP_PALETTE = [
@@ -40,7 +46,6 @@ function FolderTreemap({
       {holdings.map((h, i) => (
         <Box
           key={h.id}
-          onClick={() => onHide(h.name)}
           sx={{
             flex: weights[i],
             minWidth: 90,
@@ -50,7 +55,6 @@ function FolderTreemap({
             flexDirection: 'column',
             justifyContent: 'flex-end',
             p: 2,
-            cursor: 'pointer',
             transition: 'filter 0.15s',
             '&:hover': { filter: 'brightness(0.97)' },
             '&:hover .treemap-hide': { opacity: 1 },
@@ -99,6 +103,7 @@ function FolderTreemap({
             className="treemap-hide"
             appVariant="outlineGray"
             label="숨기기"
+            onClick={() => onHide(h.name)}
             sx={{
               height: 26,
               fontSize: '0.6875rem',
@@ -107,6 +112,8 @@ function FolderTreemap({
               backgroundColor: color.white,
               opacity: i === 0 ? 1 : 0,
               transition: 'opacity 0.15s',
+              cursor: 'pointer',
+              '&:focus-visible': { opacity: 1 },
             }}
           />
         </Box>
@@ -122,6 +129,9 @@ export function VirtualAccountScreen({
   onSelectFolder,
   onOpenFolderModal,
   onHide,
+  isLoadingFolders = false,
+  isLoadingHoldings = false,
+  disableAddFolder = false,
 }: VirtualAccountScreenProps) {
   const selected = folders.find((f) => f.id === selectedFolderId) ?? folders[0];
   const selectedIndex = folders.findIndex((f) => f.id === selected?.id);
@@ -168,6 +178,7 @@ export function VirtualAccountScreen({
             label="폴더 추가"
             icon={<AddIcon sx={{ fontSize: 14 }} />}
             onClick={onOpenFolderModal}
+            disabled={disableAddFolder}
             sx={{
               height: 34,
               fontSize: '0.75rem',
@@ -200,7 +211,11 @@ export function VirtualAccountScreen({
               fontSize: '0.875rem',
             }}
           >
-            아직 이 폴더에 담긴 종목이 없어요.
+            {isLoadingFolders
+              ? '가상계좌 목록을 불러오는 중이에요.'
+              : isLoadingHoldings
+                ? '보유 종목을 불러오는 중이에요.'
+                : '아직 이 폴더에 담긴 종목이 없어요.'}
           </Box>
         ) : (
           <FolderTreemap holdings={selected.holdings} onHide={onHide} />

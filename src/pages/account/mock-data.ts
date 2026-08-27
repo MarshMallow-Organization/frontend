@@ -2,7 +2,6 @@ import type {
   AccountRow,
   HiddenStock,
   HoldingStock,
-  InvestmentFolder,
 } from '../../types/account';
 
 /** 실제 서비스 연동 전까지 사용하는 더미 데이터 (my-react-ts 프로토타입에서 이식). */
@@ -18,12 +17,6 @@ export const HOLDING_STOCKS: HoldingStock[] = [
   { id: 'h1', name: 'SK하이닉스', amount: 5500000, changePct: 30 },
   { id: 'h2', name: '테슬라', amount: 300000, changePct: -4 },
   { id: 'h3', name: '삼성전자', amount: 45000, changePct: 12 },
-];
-
-export const INITIAL_FOLDERS: InvestmentFolder[] = [
-  { id: 'f1', label: '안정형 투자 (+4%)', holdings: HOLDING_STOCKS },
-  { id: 'f2', label: '공격형 투자', holdings: [] },
-  { id: 'f3', label: '관심종목 투자', holdings: [] },
 ];
 
 export const INITIAL_HIDDEN_STOCKS: HiddenStock[] = [

@@ -12,6 +12,8 @@ import HomePage from './pages/home/HomePage';
 import AccountPage from './pages/account/AccountPage';
 import StockDetailPage from './pages/stock/StockDetailPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
+import SignUpPage from './pages/signup/SignUpPage';
+import RegisterKeyPage from './pages/register-key/RegisterKeyPage';
 
 function App() {
   const [location, setLocation] = useState(() => ({
@@ -57,6 +59,7 @@ function App() {
    * 경로를 바꿀 때는 AppShell의 NAV_TABS와 navigation.ts를 함께 확인하고,
    * 이전 주소 호환이 필요하면 기존 경로를 alias로 남긴다.
    */
+
   if (
     location.pathname === '/journal' ||
     location.pathname === '/trade-journal' ||
@@ -64,6 +67,9 @@ function App() {
   ) {
     return <TradeJournalPage />;
   }
+  if (location.pathname === '/signup') return <SignUpPage />;
+  if (location.pathname === '/register-key') return <RegisterKeyPage />;
+
   if (location.pathname.startsWith('/news')) return <NewsPage />;
   // AppShell 홈 버튼(navigate('/home'))·내 계좌 탭(navigate('/account'))의 실제
   // 도착지. #home/#account/#stock 해시는 이전 주소 alias로 남겨둔다.

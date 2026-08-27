@@ -51,6 +51,13 @@ export const tokens = {
     //login screen added(07/29)
     loginOauthBorder: '#e6e6e6', // 간편로그인 버튼 보더 (782:4358)
     loginOauthText: '#8b8b8b', // "Google로 로그인" 라벨 (782:4360)
+    // signup screen (356:1871)
+    signupLabel: '#9a9a9a', // 필드 라벨 (356:1897)
+    signupRequired: '#dd6e6e', // 필수 표시 * (356:1905)
+    signupFieldLine: '#d9d9d9', // 필드 밑줄 (356:1901)
+    signupCardShadow: 'rgba(0,0,0,0.3)', // 입력 카드 그림자 (356:1896)
+    signupDivider: '#e0e0e0', // 간편로그인 구분선 (356:1914)
+    signupDividerText: '#afafaf', // "간편로그인" (356:1916)
     // precision-qa deep-audit corrections
     calBorder: '#d9d9d9', // RangeCalendar container border (17:888)
     chipFilledGrayBg: 'rgba(200,209,215,0.62)', // filled gray tag bg (58:1066)
