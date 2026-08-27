@@ -1,362 +1,564 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import Divider from '@mui/material/Divider';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import Switch from '@mui/material/Switch';
-import TextField from '@mui/material/TextField';
+import ButtonBase from '@mui/material/ButtonBase';
+import CircularProgress from '@mui/material/CircularProgress';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
-import CameraAltRoundedIcon from '@mui/icons-material/CameraAltRounded';
-import GoogleIcon from '@mui/icons-material/Google';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import AppShell from '../../components/AppShell/AppShell';
 import BaseCard from '../../components/BaseCard/BaseCard';
 import Button from '../../components/Button/Button';
-import { readSessionUser, writeSessionUser } from '../../lib/authSession';
+import TextField from '../../components/TextField/TextField';
+import { ApiError } from '../../lib/api';
 import { navigate } from '../../lib/navigation';
+import { getMyInfo, type UserInfo } from '../../features/users/usersApi';
 import { tokens } from '../../theme/tokens';
+import { MY_PAGE_CARD_SX, MY_PAGE_CARD_TITLE_SX } from './card-styles';
+import googleLogo from '../../assets/icons/google.svg';
+
+const { color } = tokens;
+
+/**
+ * 마이페이지 · 회원 정보 수정 (Figma 824:6502).
+ *
+ * 마이페이지 대시보드(`MyPage.tsx`)의 "프로필 수정"에서 진입(`/my-page/edit`).
+ * 공통 헤더/패널은 `AppShell`이 담당하고 이 파일은 패널 children만 그린다.
+ *
+ * 데이터 범위:
+ * - 이름·이메일·프로필 이미지·증권 API 연동 상태 → `GET /users/me` 실연동.
+ * - 저장 / 비밀번호 변경 / API Key·Secret 저장 / Google 연동 해제 → 백엔드
+ *   엔드포인트가 아직 없어 화면에서만 처리한다(mock, 네트워크 호출 없음).
+ */
+
+// Figma 라벨 텍스트 색 (#5d5d5d / #3f3f3f). 근사 토큰이 없어 화면 상수로 둔다.
+const LABEL_INK = '#5d5d5d';
+const TITLE_INK = '#3f3f3f';
+
+const FIELD_BORDER = 'rgba(155,155,155,0.5)';
+const ROW_DIVIDER = 'rgba(155,155,155,0.28)';
+const LABEL_BG = 'rgba(230,234,238,0.5)';
+
+// 공용 TextField(pill/outlined)로는 표현이 안 되는 Figma의 작은 입력칸
+// (높이 37, 1.5px #9b9b9b@50%, 살짝 둥근 모서리)을 sx로 맞춘다.
+const compactInputSx = {
+  '& .MuiOutlinedInput-root': {
+    height: 37,
+    borderRadius: '6px',
+    backgroundColor: color.white,
+  },
+  '& .MuiOutlinedInput-input': { padding: '0 12px', fontSize: 15 },
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: FIELD_BORDER,
+    borderWidth: '1.5px',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: FIELD_BORDER },
+} as const;
+
+const MIN_PASSWORD_LENGTH = 8;
+
+function splitEmail(email: string): { local: string; domain: string } {
+  const at = email.lastIndexOf('@');
+  if (at === -1) return { local: email, domain: '' };
+  return { local: email.slice(0, at), domain: email.slice(at + 1) };
+}
+
+/** 정보 카드 안 필드 묶음 — 옅은 테두리로 감싼 그룹. */
+function FieldGroup({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      sx={{
+        border: `1px solid ${ROW_DIVIDER}`,
+        borderRadius: '8px',
+        overflow: 'hidden',
+        backgroundColor: 'rgba(255,255,255,0.4)',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+/** 필드 그룹 안 한 줄 — [라벨 셀 | 내용 셀]. */
+function FieldLine({
+  label,
+  badge,
+  last = false,
+  children,
+}: {
+  label: string;
+  badge?: ReactNode;
+  last?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: 57,
+        borderBottom: last ? 'none' : `1px solid ${ROW_DIVIDER}`,
+      }}
+    >
+      <Box
+        sx={{
+          width: { xs: 108, sm: 150, md: 196 },
+          flexShrink: 0,
+          backgroundColor: LABEL_BG,
+          borderRight: `1px solid ${ROW_DIVIDER}`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: 0.5,
+          px: { xs: 1.5, md: '30px' },
+          py: 1,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: { xs: 14, md: 20 },
+            fontWeight: 500,
+            color: LABEL_INK,
+            letterSpacing: '-0.4px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {label}
+        </Typography>
+        {badge}
+      </Box>
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 1.5,
+          px: { xs: 1.5, md: '28px' },
+          py: 1.25,
+        }}
+      >
+        {children}
+      </Box>
+    </Box>
+  );
+}
+
+function ConnectionBadge({ connected }: { connected: boolean }) {
+  return (
+    <Typography
+      sx={{
+        fontSize: { xs: 11, md: 13 },
+        fontWeight: 600,
+        color: connected ? color.selected : color.textSecondary,
+      }}
+    >
+      {connected ? '연동됨' : '미연동'}
+    </Typography>
+  );
+}
+
+type FormState = {
+  emailLocal: string;
+  emailDomain: string;
+  newPassword: string;
+  passwordConfirm: string;
+  apiKey: string;
+  apiSecret: string;
+};
+
+const EMPTY_FORM: FormState = {
+  emailLocal: '',
+  emailDomain: '',
+  newPassword: '',
+  passwordConfirm: '',
+  apiKey: '',
+  apiSecret: '',
+};
 
 export default function MyPageEditPage() {
-  const sessionUser = useMemo(() => readSessionUser(), []);
-  const [name, setName] = useState(sessionUser.name);
-  const [nickname, setNickname] = useState(sessionUser.nickname);
-  const [email, setEmail] = useState(sessionUser.email);
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [apiSecret, setApiSecret] = useState('');
-  const [googleConnected, setGoogleConnected] = useState(true);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  function handleImage(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [formError, setFormError] = useState('');
+  const [saveNotice, setSaveNotice] = useState('');
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  }
+  const baseForm = useMemo<FormState>(() => {
+    if (!user) return EMPTY_FORM;
+    const { local, domain } = splitEmail(user.email);
+    return { ...EMPTY_FORM, emailLocal: local, emailDomain: domain };
+  }, [user]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError('');
+  useEffect(() => {
+    const controller = new AbortController();
 
-    if (!name.trim() || !nickname.trim() || !email.trim()) {
-      setError('이름, 닉네임, 이메일을 모두 입력해 주세요.');
-      return;
+    getMyInfo(controller.signal)
+      .then((data) => {
+        setUser(data);
+        const { local, domain } = splitEmail(data.email);
+        setForm({ ...EMPTY_FORM, emailLocal: local, emailDomain: domain });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : '회원 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+        );
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, []);
+
+  const setField = (key: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFormError('');
+    setSaveNotice('');
+  };
+
+  const handleSave = () => {
+    const { newPassword, passwordConfirm } = form;
+    if (newPassword !== '' || passwordConfirm !== '') {
+      if (newPassword.length < MIN_PASSWORD_LENGTH) {
+        setFormError(`비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`);
+        return;
+      }
+      if (newPassword !== passwordConfirm) {
+        setFormError('비밀번호가 일치하지 않습니다.');
+        return;
+      }
     }
-    if (password && password !== passwordConfirm) {
-      setError('새 비밀번호가 서로 일치하지 않습니다.');
-      return;
-    }
+    setFormError('');
+    // TODO(mock): 회원 정보 저장 API (PATCH /users/me, 비밀번호 변경, API Key 저장)가
+    // 백엔드에 아직 없다. 엔드포인트가 확정되면 features/users에 추가하고 연결한다.
+    setSaveNotice('저장 기능은 아직 서버에 연결되지 않았습니다. (화면 확인용)');
+  };
 
-    writeSessionUser({
-      ...sessionUser,
-      name: name.trim(),
-      nickname: nickname.trim(),
-      email: email.trim(),
-    });
+  const handleCancel = () => {
+    setForm(baseForm);
+    setFormError('');
+    setSaveNotice('');
     navigate('/my-page');
-  }
+  };
+
+  const tossConnected = user?.tossApi.connected ?? false;
 
   return (
     <AppShell currentPageLabel="마이페이지 수정">
       <Box
         component="main"
         sx={{
+          flex: 1,
           width: '100%',
           minWidth: 0,
-          overflow: 'auto',
-          p: { xs: 0.5, md: 1.5 },
+          overflowY: 'auto',
+          px: { xs: 2, md: 'clamp(20px, 3vw, 43px)' },
+          py: { xs: 2, md: 'clamp(16px, 2vw, 24px)' },
+          fontFamily: tokens.fontFamily,
         }}
       >
-        <Box sx={{ maxWidth: 1280, mx: 'auto' }}>
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 2.5 }}
-          >
-            <IconButton
-              aria-label="마이페이지로 돌아가기"
-              onClick={() => navigate('/my-page')}
-            >
-              <ArrowBackRoundedIcon />
-            </IconButton>
-            <Box>
-              <Typography
-                component="h1"
-                sx={{ fontSize: 28, fontWeight: 800, color: '#3D5669' }}
-              >
-                내 정보 수정
-              </Typography>
-              <Typography
-                sx={{
-                  mt: 0.35,
-                  fontSize: 14,
-                  color: tokens.color.textSecondary,
-                }}
-              >
-                프로필과 연결 정보를 관리합니다.
-              </Typography>
-            </Box>
-          </Box>
+        <Typography
+          component="h1"
+          sx={{
+            textAlign: 'center',
+            fontSize: 'clamp(26px, 3.2vw, 48px)',
+            fontWeight: 500,
+            color: TITLE_INK,
+            letterSpacing: '-0.96px',
+            mb: 'clamp(16px, 2.5vw, 32px)',
+          }}
+        >
+          회원 정보 수정
+        </Typography>
 
-          <Alert severity="info" sx={{ mb: 2.5, borderRadius: 3 }}>
-            프로필 수정 API가 아직 제공되지 않아 이 화면의 변경사항은 현재
-            브라우저에만 저장됩니다. 비밀번호와 API 인증 정보는 저장하지
-            않습니다.
+        <BaseCard
+          component="section"
+          sx={{
+            ...MY_PAGE_CARD_SX,
+            maxWidth: 1769,
+            mx: 'auto',
+            backgroundColor: 'rgba(255,255,255,0.5)',
+            p: { xs: '20px 16px', md: 'clamp(24px, 3vw, 40px)' },
+          }}
+        >
+          <Typography sx={{ ...MY_PAGE_CARD_TITLE_SX, mb: 2 }}>
+            회원 정보 입력
+          </Typography>
+
+          <Alert severity="info" sx={{ mb: 2.5, borderRadius: 2 }}>
+            이름·이메일·연동 상태는 서버에서 불러온 값입니다. 저장·비밀번호
+            변경·API Key 입력은 아직 서버에 연결되지 않아 저장되지 않습니다.
           </Alert>
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '330px minmax(0, 1fr)' },
-              gap: 2.5,
-            }}
-          >
-            <BaseCard
-              component="section"
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : loadError !== '' ? (
+            <Alert severity="error" sx={{ my: 2 }}>
+              {loadError}
+            </Alert>
+          ) : (
+            <Box
               sx={{
-                p: 3.5,
-                border: 0,
-                alignSelf: 'start',
-                textAlign: 'center',
-                boxShadow: '0 10px 30px rgba(72, 106, 128, 0.10)',
+                display: 'flex',
+                gap: { xs: 2, md: 'clamp(24px, 4vw, 56px)' },
+                alignItems: 'flex-start',
               }}
             >
-              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+              {/* 프로필 이미지 — 업로드는 미구현(TODO) */}
+              <Box
+                sx={{
+                  position: 'relative',
+                  flexShrink: 0,
+                  display: { xs: 'none', sm: 'block' },
+                }}
+              >
                 <Avatar
-                  src={imagePreview ?? undefined}
+                  src={user?.profileImageUrl ?? undefined}
                   sx={{
-                    width: 144,
-                    height: 144,
-                    bgcolor: '#DDEAF2',
-                    color: '#FFFFFF',
+                    width: { sm: 96, md: 115 },
+                    height: { sm: 96, md: 115 },
+                    bgcolor: '#c8d9e4',
+                    color: color.white,
                   }}
                 >
-                  <PersonRoundedIcon sx={{ width: 106, height: 106 }} />
+                  <PersonRoundedIcon sx={{ width: '62%', height: '62%' }} />
                 </Avatar>
-                <IconButton
-                  component="label"
-                  aria-label="프로필 사진 선택"
+                <ButtonBase
+                  aria-label="프로필 사진 변경"
+                  onClick={() =>
+                    setSaveNotice('프로필 사진 변경은 아직 준비 중입니다.')
+                  }
                   sx={{
                     position: 'absolute',
-                    right: 1,
+                    right: -2,
                     bottom: 2,
-                    width: 42,
-                    height: 42,
-                    color: '#FFFFFF',
-                    bgcolor: tokens.color.primary,
-                    border: '3px solid #FFFFFF',
-                    '&:hover': { bgcolor: tokens.color.primaryPressed },
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    backgroundColor: color.white,
+                    boxShadow: '0 0 3px rgba(0,0,0,0.25)',
+                    color: '#6f6f6f',
                   }}
                 >
-                  <CameraAltRoundedIcon fontSize="small" />
-                  <input
-                    hidden
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImage}
-                  />
-                </IconButton>
+                  <PhotoCameraRoundedIcon sx={{ fontSize: 17 }} />
+                </ButtonBase>
               </Box>
-              <Typography
-                sx={{
-                  mt: 2.2,
-                  fontSize: 20,
-                  fontWeight: 800,
-                  color: '#3D5669',
-                }}
-              >
-                {name || '사용자'}
-              </Typography>
-              <Typography sx={{ mt: 0.4, color: tokens.color.textSecondary }}>
-                @{nickname || 'nickname'}
-              </Typography>
-              <Typography
-                sx={{ mt: 2, fontSize: 12, lineHeight: 1.6, color: '#98A6B0' }}
-              >
-                JPG, PNG 이미지를 선택할 수 있습니다.
-                <br />
-                이미지는 새로고침하면 초기화됩니다.
-              </Typography>
-            </BaseCard>
 
-            <BaseCard
-              component="section"
+              <Stack sx={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <FieldGroup>
+                  <FieldLine label="이름">
+                    <Typography
+                      sx={{
+                        fontSize: { xs: 15, md: 20 },
+                        fontWeight: 600,
+                        color: LABEL_INK,
+                      }}
+                    >
+                      {user?.name ?? '—'}
+                    </Typography>
+                  </FieldLine>
+                  <FieldLine label="e-mail" last>
+                    <TextField
+                      aria-label="이메일 아이디"
+                      placeholder="kimminji"
+                      value={form.emailLocal}
+                      onChange={(e) => setField('emailLocal', e.target.value)}
+                      autoComplete="email"
+                      sx={{ ...compactInputSx, width: 'min(240px, 46vw)' }}
+                    />
+                    <Typography sx={{ fontSize: 18, color: 'rgba(0,0,0,0.5)' }}>
+                      @
+                    </Typography>
+                    <TextField
+                      aria-label="이메일 도메인"
+                      placeholder="naver.com"
+                      value={form.emailDomain}
+                      onChange={(e) => setField('emailDomain', e.target.value)}
+                      sx={{ ...compactInputSx, width: 'min(160px, 34vw)' }}
+                    />
+                  </FieldLine>
+                </FieldGroup>
+
+                <FieldGroup>
+                  <FieldLine label="Google 연동" last>
+                    {/* TODO(mock): Google 연동 상태 조회/해제 API 미정. 정적 표시. */}
+                    <Box
+                      component="img"
+                      src={googleLogo}
+                      alt=""
+                      sx={{ width: 19, height: 19 }}
+                    />
+                    <Typography
+                      sx={{ fontSize: { xs: 14, md: 18 }, color: LABEL_INK }}
+                    >
+                      계정으로 로그인
+                    </Typography>
+                    <Box sx={{ flex: 1 }} />
+                    <ButtonBase
+                      onClick={() =>
+                        setSaveNotice('Google 연동 해제는 아직 준비 중입니다.')
+                      }
+                      sx={{
+                        px: '18px',
+                        py: '7px',
+                        borderRadius: '999px',
+                        fontFamily: tokens.fontFamily,
+                        fontSize: 15,
+                        color: 'rgba(72,73,73,0.8)',
+                        backgroundColor: '#f2f3f4',
+                      }}
+                    >
+                      Disconnect
+                    </ButtonBase>
+                  </FieldLine>
+                </FieldGroup>
+
+                <Typography
+                  sx={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: color.primary,
+                    letterSpacing: '-0.28px',
+                    mt: 0.5,
+                  }}
+                >
+                  * 비밀번호 변경을 원하시면 새로운 비밀번호를 입력하세요.
+                </Typography>
+
+                <FieldGroup>
+                  <FieldLine label="신규 비밀번호">
+                    <TextField
+                      type="password"
+                      placeholder="새 비밀번호"
+                      value={form.newPassword}
+                      onChange={(e) => setField('newPassword', e.target.value)}
+                      autoComplete="new-password"
+                      sx={{ ...compactInputSx, width: 'min(420px, 100%)' }}
+                    />
+                  </FieldLine>
+                  <FieldLine label="비밀번호 확인" last>
+                    <TextField
+                      type="password"
+                      placeholder="새 비밀번호 확인"
+                      value={form.passwordConfirm}
+                      onChange={(e) =>
+                        setField('passwordConfirm', e.target.value)
+                      }
+                      autoComplete="new-password"
+                      sx={{ ...compactInputSx, width: 'min(420px, 100%)' }}
+                    />
+                  </FieldLine>
+                </FieldGroup>
+
+                <FieldGroup>
+                  <FieldLine
+                    label="API Key"
+                    last
+                    badge={<ConnectionBadge connected={tossConnected} />}
+                  >
+                    <TextField
+                      placeholder="API Key"
+                      value={form.apiKey}
+                      onChange={(e) => setField('apiKey', e.target.value)}
+                      sx={{ ...compactInputSx, width: 'min(420px, 100%)' }}
+                    />
+                    <Link
+                      href="#"
+                      underline="always"
+                      onClick={(e) => e.preventDefault()}
+                      sx={{
+                        fontSize: 15,
+                        color: color.primary,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      API는 어떻게 얻나요?
+                    </Link>
+                  </FieldLine>
+                </FieldGroup>
+
+                <FieldGroup>
+                  <FieldLine
+                    label="API Secret"
+                    last
+                    badge={<ConnectionBadge connected={tossConnected} />}
+                  >
+                    <TextField
+                      placeholder="API Secret"
+                      value={form.apiSecret}
+                      onChange={(e) => setField('apiSecret', e.target.value)}
+                      sx={{ ...compactInputSx, width: 'min(420px, 100%)' }}
+                    />
+                  </FieldLine>
+                </FieldGroup>
+
+                {formError !== '' && (
+                  <Typography
+                    role="alert"
+                    sx={{ fontSize: 14, color: color.sell }}
+                  >
+                    {formError}
+                  </Typography>
+                )}
+                {saveNotice !== '' && (
+                  <Typography sx={{ fontSize: 14, color: color.textSecondary }}>
+                    {saveNotice}
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+          )}
+
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: 2,
+              mt: 4,
+            }}
+          >
+            <Button
+              appVariant="filled"
+              onClick={handleSave}
+              disabled={loading || loadError !== ''}
               sx={{
-                p: { xs: 2.5, md: 4 },
-                border: 0,
-                boxShadow: '0 10px 30px rgba(72, 106, 128, 0.10)',
+                borderRadius: '30px',
+                minHeight: 0,
+                height: 'auto',
+                px: '25px',
+                py: '12px',
+                fontSize: 15,
+                fontWeight: 700,
               }}
             >
-              <Typography
-                component="h2"
-                sx={{ fontSize: 21, fontWeight: 800, color: '#3D5669' }}
-              >
-                기본 정보
-              </Typography>
-              <Box
-                sx={{
-                  mt: 2.5,
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2,
-                }}
-              >
-                <TextField
-                  required
-                  label="이름"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-                <TextField
-                  required
-                  label="닉네임"
-                  value={nickname}
-                  onChange={(event) => setNickname(event.target.value)}
-                />
-                <TextField
-                  required
-                  type="email"
-                  label="이메일"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  sx={{ gridColumn: { sm: '1 / -1' } }}
-                />
-              </Box>
-
-              <Divider sx={{ my: 3.5 }} />
-              <Typography
-                component="h2"
-                sx={{ fontSize: 21, fontWeight: 800, color: '#3D5669' }}
-              >
-                보안 정보
-              </Typography>
-              <Box
-                sx={{
-                  mt: 2.5,
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2,
-                }}
-              >
-                <TextField
-                  type="password"
-                  label="새 비밀번호"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-                <TextField
-                  type="password"
-                  label="새 비밀번호 확인"
-                  autoComplete="new-password"
-                  value={passwordConfirm}
-                  onChange={(event) => setPasswordConfirm(event.target.value)}
-                />
-              </Box>
-
-              <Divider sx={{ my: 3.5 }} />
-              <Typography
-                component="h2"
-                sx={{ fontSize: 21, fontWeight: 800, color: '#3D5669' }}
-              >
-                외부 서비스 연결
-              </Typography>
-              <Box
-                sx={{
-                  mt: 2.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                  p: 2,
-                  borderRadius: 3,
-                  border: `1px solid ${tokens.color.border}`,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <GoogleIcon color="action" />
-                  <Box>
-                    <Typography sx={{ fontWeight: 750, color: '#40586A' }}>
-                      Google 계정
-                    </Typography>
-                    <Typography
-                      sx={{ fontSize: 12, color: tokens.color.textSecondary }}
-                    >
-                      {googleConnected ? '연결됨' : '연결 해제됨'}
-                    </Typography>
-                  </Box>
-                </Box>
-                <FormControlLabel
-                  label={googleConnected ? '연결' : '해제'}
-                  labelPlacement="start"
-                  control={
-                    <Switch
-                      checked={googleConnected}
-                      onChange={(event) =>
-                        setGoogleConnected(event.target.checked)
-                      }
-                    />
-                  }
-                />
-              </Box>
-              <Box
-                sx={{
-                  mt: 2,
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2,
-                }}
-              >
-                <TextField
-                  type="password"
-                  label="증권 API Key"
-                  value={apiKey}
-                  onChange={(event) => setApiKey(event.target.value)}
-                  helperText="화면 시연용 입력란이며 저장되지 않습니다."
-                />
-                <TextField
-                  type="password"
-                  label="증권 API Secret"
-                  value={apiSecret}
-                  onChange={(event) => setApiSecret(event.target.value)}
-                  helperText="화면 시연용 입력란이며 저장되지 않습니다."
-                />
-              </Box>
-
-              {error && (
-                <Alert severity="error" sx={{ mt: 2.5 }}>
-                  {error}
-                </Alert>
-              )}
-              <Box
-                sx={{
-                  mt: 3.5,
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: 1.25,
-                }}
-              >
-                <Button
-                  type="button"
-                  appVariant="outline"
-                  onClick={() => navigate('/my-page')}
-                >
-                  취소
-                </Button>
-                <Button type="submit">변경사항 저장</Button>
-              </Box>
-            </BaseCard>
+              변경사항 저장
+            </Button>
+            <ButtonBase
+              onClick={handleCancel}
+              sx={{
+                fontFamily: tokens.fontFamily,
+                fontSize: 16,
+                fontWeight: 700,
+                color: 'rgba(93,93,93,0.7)',
+                px: 1,
+                py: 0.5,
+                borderRadius: '6px',
+              }}
+            >
+              취소
+            </ButtonBase>
           </Box>
-        </Box>
+        </BaseCard>
       </Box>
     </AppShell>
   );
