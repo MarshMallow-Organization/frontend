@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react';
+import { GOOGLE_CALLBACK_PATH } from './lib/googleAuth';
 import { APP_NAVIGATE_EVENT } from './lib/navigation';
 import LoginPage from './pages/login/LoginPage';
 import ComponentsPreview from './pages/dev/ComponentsPreviewPage';
 import ComponentsVerify from './pages/dev/ComponentsVerifyPage';
 import NewsPage from './pages/news/NewsPage';
 import TradeJournalPage from './pages/trade-journal/TradeJournalPage';
+import MyPage from './pages/my-page/MyPage';
+import MyPageEditPage from './pages/my-page/MyPageEditPage';
 import HomePage from './pages/home/HomePage';
 import AccountPage from './pages/account/AccountPage';
 import StockDetailPage from './pages/stock/StockDetailPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
-import { GOOGLE_CALLBACK_PATH } from './lib/googleAuth';
 import SignUpPage from './pages/signup/SignUpPage';
 import RegisterKeyPage from './pages/register-key/RegisterKeyPage';
 
 function App() {
   const [location, setLocation] = useState(() => ({
     pathname: window.location.pathname,
+    search: window.location.search,
     hash: window.location.hash,
   }));
 
@@ -23,6 +26,7 @@ function App() {
     const onChange = () =>
       setLocation({
         pathname: window.location.pathname,
+        search: window.location.search,
         hash: window.location.hash,
       });
 
@@ -45,7 +49,7 @@ function App() {
       />
     );
   }
-  /* 구글 로그인용 임시 라우트*/
+  /* 구글 로그인용 임시 라우트 */
   if (location.pathname === GOOGLE_CALLBACK_PATH) {
     return <GoogleCallbackPage />;
   }
@@ -76,8 +80,13 @@ function App() {
     return <AccountPage />;
   }
   if (location.pathname === '/stock' || location.hash === '#stock') {
-    return <StockDetailPage />;
+    const stockCodeQuery = new URLSearchParams(location.search).get(
+      'stockCode',
+    );
+    return <StockDetailPage stockCodeQuery={stockCodeQuery} />;
   }
+  if (location.pathname === '/my-page/edit') return <MyPageEditPage />;
+  if (location.pathname === '/my-page') return <MyPage />;
   return <LoginPage />;
 }
 

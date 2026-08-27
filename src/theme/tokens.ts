@@ -77,6 +77,28 @@ export const tokens = {
     heatmapGreen: '#e5f3da',
     // 숨기기 목록 아이콘 박스 (Figma 339:1317: 테슬라=blue accentBlue, 인텔=amber)
     hideIconAmber: '#bf6a02',
+    // 기업 상세 화면 (Figma 385:2425, 거래 팝업 834:7018)
+    stockAppBg: '#e9eff3',
+    stockPanelBg: '#eef5ff',
+    stockCardBorder: '#d3d3d3',
+    stockPlaceholder: '#d9d9d9',
+    stockArticlePlaceholder: '#626262',
+    stockMuted: '#9e9e9e',
+    stockMeta: '#919191',
+    stockPositive: '#4ace55',
+    stockSoftCyan: '#d9f2f7',
+    stockCyanText: '#008792',
+    stockAiText: '#888888',
+    stockArticleMeta: '#939393',
+    stockMetricBlue: '#3478f6',
+    stockMetricGreen: '#2e9b6f',
+    stockMetricOrange: '#e08a00',
+    stockMetricPurple: '#7a4ddb',
+    stockMetricGreenBg: '#eaf8f1',
+    stockMetricOrangeBg: '#fff4e4',
+    stockMetricPurpleBg: '#f2ecff',
+    stockDialogBorder: '#d4d4d4',
+    stockDialogOptionBorder: '#b9b9b9',
   },
   radius: 8, // buttons (14:359)
   radiusField: 10, // chips & filled search fields (17:441 / 16:395)
