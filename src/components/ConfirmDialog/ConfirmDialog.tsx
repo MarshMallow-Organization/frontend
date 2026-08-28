@@ -5,42 +5,37 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
-import { TextField } from '../TextField';
 import { Button } from '../Button';
 import { tokens } from '../../theme/tokens';
 
-const { fontFamily } = tokens;
+const { fontFamily, color } = tokens;
 
-export interface FolderModalProps {
+export interface ConfirmDialogProps {
   open: boolean;
-  value: string;
-  onChange: (v: string) => void;
+  title: string;
+  description?: string;
   onCancel: () => void;
   onConfirm: () => void;
-  /** 가상계좌 생성/이름 변경 API 에러 메시지 (400/404/409 등 서버 메시지를 그대로 표시). */
   error?: string | null;
   isSubmitting?: boolean;
-  /** 모달 제목. 기본은 "폴더 추가"(생성), 이름 변경 시 다른 문구로 재사용한다. */
-  title?: string;
-  /** 완료 버튼 문구(대기 상태 아닐 때). */
+  cancelLabel?: string;
   confirmLabel?: string;
-  /** 완료 버튼 문구(제출 중일 때). */
   submittingLabel?: string;
 }
 
-/** 가상 계좌 화면의 "폴더 추가"/"이름 변경" 모달. */
-export function FolderModal({
+/** 삭제 등 되돌릴 수 없는 동작을 실행하기 전 확인을 받는 범용 모달. */
+export function ConfirmDialog({
   open,
-  value,
-  onChange,
+  title,
+  description,
   onCancel,
   onConfirm,
   error,
   isSubmitting = false,
-  title = '폴더 추가',
-  confirmLabel = '완료',
-  submittingLabel = '생성 중...',
-}: FolderModalProps) {
+  cancelLabel = '취소',
+  confirmLabel = '확인',
+  submittingLabel = '처리 중...',
+}: ConfirmDialogProps) {
   return (
     <Dialog
       open={open}
@@ -71,33 +66,36 @@ export function FolderModal({
           </IconButton>
         </Stack>
 
-        <TextField
-          label="폴더 이름"
-          autoFocus
-          fullWidth
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="ex. 안정형 투자"
-          error={Boolean(error)}
-          helperText={error ?? ' '}
-          disabled={isSubmitting}
-          sx={{ mb: 1 }}
-        />
+        {description && (
+          <Typography
+            sx={{ fontSize: '0.8125rem', color: color.textSecondary }}
+          >
+            {description}
+          </Typography>
+        )}
+
+        {error && (
+          <Typography
+            sx={{ fontSize: '0.75rem', color: color.priceDown, mt: 1 }}
+          >
+            {error}
+          </Typography>
+        )}
 
         <Box
-          sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}
+          sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}
         >
           <Button
             appVariant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
           >
-            취소
+            {cancelLabel}
           </Button>
           <Button
             appVariant="filled"
             onClick={onConfirm}
-            disabled={!value.trim() || isSubmitting}
+            disabled={isSubmitting}
           >
             {isSubmitting ? submittingLabel : confirmLabel}
           </Button>
@@ -107,4 +105,4 @@ export function FolderModal({
   );
 }
 
-export default FolderModal;
+export default ConfirmDialog;
