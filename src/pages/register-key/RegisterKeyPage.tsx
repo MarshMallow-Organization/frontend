@@ -6,12 +6,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
+import { AuthSuccessDialog } from '../../components/AuthSuccessDialog';
 import { registerTossAccount } from '../../features/auth/authApi';
 import { ApiError } from '../../lib/api';
 import {
   AFTER_LOGIN_PATH,
   hasAccessToken,
   markTossApiConnected,
+  readSessionUser,
 } from '../../lib/authSession';
 import { navigate } from '../../lib/navigation';
 import { tokens } from '../../theme/tokens';
@@ -49,6 +51,9 @@ export default function RegisterKeyPage() {
   const [apiSecret, setApiSecret] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // 등록 성공 후 완료 팝업. "확인"을 눌러야 홈으로 넘어간다.
+  const [registerDone, setRegisterDone] = useState(false);
+  const [sessionName] = useState(() => readSessionUser()?.name ?? undefined);
 
   useEffect(() => {
     if (!hasAccessToken()) {
@@ -73,7 +78,8 @@ export default function RegisterKeyPage() {
         secretKey: trimmedSecret,
       });
       markTossApiConnected();
-      navigate(AFTER_LOGIN_PATH);
+      // 바로 이동하지 않고 완료 팝업을 띄운다. 이동은 팝업의 onConfirm 에서.
+      setRegisterDone(true);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -281,6 +287,13 @@ export default function RegisterKeyPage() {
           </Typography>
         </Stack>
       </Box>
+
+      <AuthSuccessDialog
+        open={registerDone}
+        title="API Key 등록 완료"
+        userName={sessionName}
+        onConfirm={() => navigate(AFTER_LOGIN_PATH)}
+      />
     </Box>
   );
 }

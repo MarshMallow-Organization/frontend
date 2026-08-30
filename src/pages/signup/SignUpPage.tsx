@@ -6,6 +6,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
+import { AuthSuccessDialog } from '../../components/AuthSuccessDialog';
 import { persistAuthSession, signup } from '../../features/auth/authApi';
 import { ApiError } from '../../lib/api';
 import { AFTER_SIGNUP_PATH } from '../../lib/authSession';
@@ -113,6 +114,8 @@ export default function SignUpPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // 가입 성공 후 완료 팝업. "확인"을 눌러야 API Key 등록 화면으로 넘어간다.
+  const [signupDone, setSignupDone] = useState(false);
 
   const handleGoogleSignUp = () => {
     try {
@@ -161,7 +164,8 @@ export default function SignUpPage() {
         email: form.email.trim(),
         name: form.name.trim(),
       });
-      navigate(AFTER_SIGNUP_PATH);
+      // 바로 이동하지 않고 완료 팝업을 띄운다. 이동은 팝업의 onConfirm 에서.
+      setSignupDone(true);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -400,6 +404,12 @@ export default function SignUpPage() {
           </Stack>
         </Box>
       </Box>
+
+      <AuthSuccessDialog
+        open={signupDone}
+        userName={form.name.trim()}
+        onConfirm={() => navigate(AFTER_SIGNUP_PATH)}
+      />
     </Box>
   );
 }
