@@ -6,8 +6,11 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { TextField } from '../../components/TextField';
 import { Button } from '../../components/Button';
-import { signup } from '../../features/auth/authApi';
+import { AuthSuccessDialog } from '../../components/AuthSuccessDialog';
+import { persistAuthSession, signup } from '../../features/auth/authApi';
 import { ApiError } from '../../lib/api';
+import { AFTER_SIGNUP_PATH } from '../../lib/authSession';
+import { redirectToGoogle } from '../../lib/googleAuth';
 import { navigate } from '../../lib/navigation';
 import { tokens } from '../../theme/tokens';
 import googleLogo from '../../assets/icons/google.svg';
@@ -26,19 +29,9 @@ const { color } = tokens;
 const FORM_PANE_BG = [
   'radial-gradient(60% 56% at 104% 34%, rgba(75,220,255,0.40) 0%, rgba(75,220,255,0) 68%)',
   'radial-gradient(54% 54% at 64% 64%, rgba(184,113,255,0.22) 0%, rgba(184,113,255,0) 66%)',
-  'radial-gradient(54% 54% at 38% 64%, rgba(73,114,255,0.20) 0%, rgba(73,114,255,0) 66%)',
+  'radial-gradient(54% 54% at 38% 64%, rgba(73,114,255,0.20) 0%, rgba(73,114,255,0) 68%)',
   'radial-gradient(52% 56% at 2% 74%, rgba(77,183,255,0.34) 0%, rgba(77,183,255,0) 68%)',
 ].join(',');
-
-const API_BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
-// LoginPage와 동일한 값. 백엔드 auth 컨트롤러는 `/auths`이므로 실제 OAuth 경로가
-// 확정되면 두 화면을 함께 수정한다.
-const GOOGLE_OAUTH_URL = `${API_BASE}/auth/google`;
-
-// Figma 주석(356:1893): 가입 완료 후 API Key 등록 화면으로 이동. Google OAuth도 동일.
-// 경로에 '/api-key'를 쓰면 vite 프록시('/api' 접두사)에 걸려 dev 서버가
-// index.html 대신 백엔드로 프록시하므로 '/register-key'를 쓴다.
-const AFTER_SIGNUP_PATH = '/register-key';
 
 // 356:1897~1904 — 라벨 top에서 밑줄까지 63px. 이 높이가 곧 카드 높이(344px)를
 // 결정하므로, 공용 TextField의 label prop(20px 줄 높이) 대신 라벨을 직접 그린다.
@@ -121,9 +114,19 @@ export default function SignUpPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // 가입 성공 후 완료 팝업. "확인"을 눌러야 API Key 등록 화면으로 넘어간다.
+  const [signupDone, setSignupDone] = useState(false);
 
   const handleGoogleSignUp = () => {
-    window.location.href = GOOGLE_OAUTH_URL;
+    try {
+      redirectToGoogle();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Google 가입을 시작하지 못했습니다.',
+      );
+    }
   };
 
   const validate = (): string => {
@@ -152,13 +155,17 @@ export default function SignUpPage() {
     setSubmitting(true);
 
     try {
-      // TODO: accessToken 저장소가 아직 없다. 인증 상태 관리가 정해지면 연결한다.
-      await signup({
+      const { accessToken } = await signup({
         email: form.email.trim(),
         password: form.password,
         name: form.name.trim(),
       });
-      navigate(AFTER_SIGNUP_PATH);
+      await persistAuthSession(accessToken, {
+        email: form.email.trim(),
+        name: form.name.trim(),
+      });
+      // 바로 이동하지 않고 완료 팝업을 띄운다. 이동은 팝업의 onConfirm 에서.
+      setSignupDone(true);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -330,7 +337,7 @@ export default function SignUpPage() {
                   boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
                 }}
               >
-                회원가입
+                {submitting ? '가입 중…' : '회원가입'}
               </Button>
             </Stack>
 
@@ -365,6 +372,7 @@ export default function SignUpPage() {
             <MuiButton
               type="button"
               onClick={handleGoogleSignUp}
+              disabled={submitting}
               disableElevation
               sx={{
                 mt: '40px',
@@ -396,6 +404,12 @@ export default function SignUpPage() {
           </Stack>
         </Box>
       </Box>
+
+      <AuthSuccessDialog
+        open={signupDone}
+        userName={form.name.trim()}
+        onConfirm={() => navigate(AFTER_SIGNUP_PATH)}
+      />
     </Box>
   );
 }

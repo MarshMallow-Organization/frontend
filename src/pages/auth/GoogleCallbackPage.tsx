@@ -10,13 +10,13 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
-import { ApiError, apiFetch } from '../../lib/api';
+import {
+  persistAuthSession,
+  loginWithGoogle,
+} from '../../features/auth/authApi';
+import { ApiError } from '../../lib/api';
+import { destinationAfterAuth } from '../../lib/authSession';
 import { GOOGLE_REDIRECT_URI, popStoredState } from '../../lib/googleAuth';
-
-interface GoogleLoginResponse {
-  accessToken?: string;
-  user?: { id: number | string; email: string; nickname?: string };
-}
 
 /** 콜백 URL 검사 결과. 성공이면 인가 코드, 실패면 사용자에게 보여줄 메시지. */
 type CallbackParams =
@@ -59,37 +59,23 @@ export default function GoogleCallbackPage() {
     if (requested.current) return;
     requested.current = true;
 
-    // 검증과 토큰 교환을 하나의 비동기 흐름으로 묶는다.(effect 본문에서 setState를 직접 호출하지 않기 위한 구조이기도 하다.)
     const handleCallback = async (): Promise<string | null> => {
       const parsed = readCallbackParams();
       if (!parsed.ok) return parsed.message;
 
       try {
-        // 인가 코드를 백엔드로 POST → JWT & 유저 정보 수신
-        const data = await apiFetch<GoogleLoginResponse>('/auth/google', {
-          method: 'POST',
-          credentials: 'include', // refresh token을 쿠키로 받을 경우 필요
-          body: JSON.stringify({
-            code: parsed.code,
-            redirectUri: GOOGLE_REDIRECT_URI,
-          }),
+        const data = await loginWithGoogle({
+          code: parsed.code,
+          redirectUri: GOOGLE_REDIRECT_URI,
         });
-
-        // 저장 후 로그인 처리
-        if (data.accessToken) {
-          localStorage.setItem('accessToken', data.accessToken);
-        }
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-
+        const user = await persistAuthSession(data.accessToken);
         // navigation.ts의 navigate()는 pushState라 인가 코드가 담긴 URL이
         // 히스토리에 남는다. 로그인 직후에는 replace로 흔적을 지운다.
-        window.location.replace('/');
+        window.location.replace(destinationAfterAuth(user));
         return null;
       } catch (e) {
         if (e instanceof ApiError) {
-          return `로그인에 실패했습니다. (${e.status})`;
+          return e.message;
         }
         return '로그인 처리 중 오류가 발생했습니다.';
       }
