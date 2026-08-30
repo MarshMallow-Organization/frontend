@@ -23,13 +23,15 @@
 | `/signup`                                | 회원가입        | 성공 시 `/register-key`                                  |
 | `/register-key`                          | 토스 API Key 등록 | `/api-key`는 Vite `/api` 프록시에 걸려 쓰지 않음. 저장 API는 후속 |
 | `/auth/google/callback`                  | Google 콜백     | 백엔드 교환 API는 후속. 이메일은 `/`                     |
-| `/news*`                                 | 뉴스            | 인기종목 탭은 `/news/popular`                                        |
-| `/journal`, `/trade-journal`, `#journal` | 매매일지        | 이전 경로 alias 포함                                                 |
-| `/home`, `#home`                         | 홈              | 로그인·키 등록 완료 도착지                                           |
-| `/account`, `#account`                   | 내 계좌         | hash는 이전 주소 alias                                               |
-| `/stock`, `#stock`                       | 종목 상세       |                                                                      |
-| `#preview`                               | 컴포넌트 프리뷰 | 개발자용                                                             |
-| `#verify=<key>`                          | 컴포넌트 검증   | 개발자용                                                             |
+| `/news*`                                 | 뉴스            | 인기종목 탭은 `/news/popular`                 |
+| `/journal`, `/trade-journal`, `#journal` | 매매일지        | 이전 경로 alias 포함                          |
+| `/home`, `#home`                         | 홈              | hash는 이전 주소 alias                        |
+| `/account`, `#account`                   | 내 계좌         | hash는 이전 주소 alias                        |
+| `/stock?stockCode=005930`, `#stock`      | 종목 상세       | 쿼리 생략 시 `005930`, hash는 이전 주소 alias |
+| `/my-page`                               | 마이페이지      | 프로필 메뉴에서 진입                          |
+| `/my-page/edit`                          | 내 정보 수정    | 더 구체적인 경로를 먼저 판별                  |
+| `#preview`                               | 컴포넌트 프리뷰 | 개발자용                                      |
+| `#verify=<key>`                          | 컴포넌트 검증   | 개발자용                                      |
 
 관심종목 탭은 실제 페이지가 없어 비활성 상태다. 내 계좌 탭은 `/account`로 이동한다.
 
@@ -39,7 +41,8 @@
 - 같은 문자열을 새 호출부에 흩뿌리지 말고 공통 이동 함수를 사용한다.
 - 공유된 이전 URL을 유지해야 하면 alias를 남긴다.
 - 없는 페이지를 임의의 다른 화면으로 연결하지 않는다.
-- 마이페이지 경로가 확정되기 전에는 아바타 이동을 추측해 구현하지 않는다.
+- AppShell 프로필 메뉴의 마이페이지 이동은 `/my-page`를 사용한다.
+- Google 콜백 경로는 `src/lib/googleAuth.ts`의 `GOOGLE_CALLBACK_PATH`를 사용하고 Google Console 및 환경변수의 redirect URI와 함께 관리한다.
 
 ## 정식 라우터 도입 시 보존할 동작
 
