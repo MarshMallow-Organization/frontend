@@ -63,6 +63,14 @@ export function readSessionUser(): SessionUser | null {
   }
 }
 
+/**
+ * 저장된 세션 사용자의 id. dev 백엔드 StubAuthGuard용 `x-stub-user-id` 헤더에서 쓴다
+ * (src/lib/api.ts). 세션이 없으면 null.
+ */
+export function readSessionUserId(): number | null {
+  return readSessionUser()?.id ?? null;
+}
+
 export function writeSessionUser(user: SessionUser): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }

@@ -1,15 +1,14 @@
+import { readSessionUserId } from './authSession';
+
 /**
  * NestJS 백엔드와 통신하는 얇은 타입 지원 fetch 래퍼.
  *
- * - `VITE_API_URL`이 없거나 비어 있으면 `/api`로 요청하고,
- *   Vite 프록시(vite.config.ts)가 http://localhost:3000 으로 넘긴다.
- * - 백엔드를 다른 포트(예: 3001)에서 띄우면 `.env`에
- *   `VITE_API_URL=http://localhost:3001` 을 넣는다.
+ * - 개발 환경: `VITE_API_URL`을 비워두면 `/api` 경로로 요청하며,
+ *   Vite dev-server 프록시(vite.config.ts)가 백엔드로 전달합니다.
+ * - 운영 환경: `VITE_API_URL`에 배포된 백엔드 주소를 지정합니다.
  */
-import { getAccessToken } from './authSession';
-
-const configuredApiUrl = import.meta.env?.VITE_API_URL?.trim();
-const BASE_URL = (configuredApiUrl || '/api').replace(/\/$/, '');
+const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
+const DEFAULT_STUB_USER_ID = 1;
 
 export interface ApiResponse<T> {
   data: T;
@@ -42,27 +41,21 @@ export class ApiError extends Error {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   return isRecord(value) && Object.hasOwn(value, 'data');
 }
 
-function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
-  return (
-    isRecord(value) &&
-    typeof value.code === 'string' &&
-    typeof value.message === 'string' &&
-    typeof value.traceId === 'string'
-  );
-}
-
 async function readResponseBody(response: Response): Promise<unknown> {
   if (response.status === 204) return undefined;
 
   const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) return response.text();
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    return text || undefined;
+  }
 
   try {
     return await response.json();
@@ -88,9 +81,18 @@ export async function apiFetch<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const accessToken = getAccessToken();
+  const accessToken = localStorage.getItem('accessToken');
   if (accessToken && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  if (import.meta.env.DEV && !headers.has('x-stub-user-id')) {
+    // 현재 백엔드 dev의 일부 API는 Bearer 토큰 대신 StubAuthGuard를 사용한다.
+    // 새 브라우저에서도 기능을 검증할 수 있도록 세션이 없으면 기본 Stub 사용자를 쓴다.
+    headers.set(
+      'x-stub-user-id',
+      String(readSessionUserId() ?? DEFAULT_STUB_USER_ID),
+    );
   }
 
   let response: Response;
@@ -101,7 +103,10 @@ export async function apiFetch<T>(
       headers,
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (
+      init?.signal?.aborted ||
+      (error instanceof DOMException && error.name === 'AbortError')
+    ) {
       throw error;
     }
 
@@ -117,17 +122,23 @@ export async function apiFetch<T>(
   const body = await readResponseBody(response);
 
   if (!response.ok) {
-    const apiError = isApiErrorResponse(body) ? body : undefined;
+    const errorBody = isRecord(body) ? body : undefined;
     const fallbackMessage =
       typeof body === 'string' && body.trim().length > 0
         ? body
         : `요청 실패: ${response.status} ${response.statusText}`;
+    const message =
+      typeof errorBody?.message === 'string'
+        ? errorBody.message
+        : fallbackMessage;
 
     throw new ApiError(
       response.status,
-      apiError?.message ?? fallbackMessage,
-      apiError?.code,
-      apiError?.traceId ?? response.headers.get('x-request-id') ?? undefined,
+      message,
+      typeof errorBody?.code === 'string' ? errorBody.code : undefined,
+      typeof errorBody?.traceId === 'string'
+        ? errorBody.traceId
+        : (response.headers.get('x-request-id') ?? undefined),
     );
   }
 
