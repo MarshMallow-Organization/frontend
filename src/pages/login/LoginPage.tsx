@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
+import MuiButton from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
-import { TextField } from '../components/TextField';
-import { Button } from '../components/Button';
-import { tokens } from '../theme/tokens';
+import { TextField } from '../../components/TextField';
+import { Button } from '../../components/Button';
+import { tokens } from '../../theme/tokens';
+import googleLogo from '../../assets/icons/google.svg';
+import { redirectToGoogle } from '../../lib/googleAuth';
+import { navigate } from '../../lib/navigation';
 
 const { color } = tokens;
 
@@ -21,8 +25,12 @@ const FORM_PANE_BG = [
 ].join(',');
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const handleGoogleLogin = () => {
+    redirectToGoogle();
+  };
 
   return (
     <Box
@@ -30,9 +38,10 @@ export default function LoginPage() {
         minHeight: '100svh',
         boxSizing: 'border-box',
         p: { xs: '3vh 4vw', md: '5.5vh 4.5vw' },
-        // decorative page gradient (92:662 reference)
         background:
           'linear-gradient(135deg, #eef6ff 0%, #f7f2ff 50%, #eafcff 100%)',
+        // 추가: 매우 큰 화면에서도 배경이 계속 적용됨
+        minWidth: '100vw',
       }}
     >
       <Box
@@ -88,12 +97,12 @@ export default function LoginPage() {
             <Stack sx={{ width: '100%', gap: '17px' }}>
               <TextField
                 appVariant="pill"
-                id="login-username"
-                label="이름"
+                id="login-email"
+                label="이메일"
                 fullWidth
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               />
               <TextField
                 appVariant="pill"
@@ -133,7 +142,7 @@ export default function LoginPage() {
                 color: color.loginLink,
               }}
             >
-              <Link
+              <Link //추후 href 교체
                 href="#"
                 underline="hover"
                 sx={{ color: 'inherit', fontSize: 17 }}
@@ -152,7 +161,7 @@ export default function LoginPage() {
                 underline="hover"
                 sx={{ color: 'inherit', fontSize: 17 }}
               >
-                아이디 찾기
+                이메일 찾기
               </Link>
               <Box
                 component="span"
@@ -162,13 +171,48 @@ export default function LoginPage() {
                 |
               </Box>
               <Link
-                href="#"
+                component="button"
+                type="button"
+                onClick={() => navigate('/signup')}
                 underline="hover"
                 sx={{ color: 'inherit', fontSize: 17 }}
               >
                 회원가입
               </Link>
             </Stack>
+
+            {/* 간편로그인 (782:4352) — 443×52, r80, 보더 #e6e6e6 */}
+            <MuiButton
+              type="button"
+              onClick={handleGoogleLogin}
+              disableElevation
+              sx={{
+                mt: '27px', // links → 간편로그인 (341:3855→782:4358)
+                position: 'relative',
+                width: 'min(100%, 443px)',
+                height: 52,
+                padding: 0,
+                borderRadius: '80px',
+                border: `1px solid ${color.loginOauthBorder}`,
+                backgroundColor: color.white,
+                color: color.loginOauthText,
+                fontSize: 15, // 782:4360
+                fontWeight: 500,
+                '&:hover': { backgroundColor: color.bg },
+              }}
+            >
+              <img
+                src={googleLogo}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  left: 24,
+                  width: 25,
+                  height: 26,
+                }}
+              />
+              Google로 로그인
+            </MuiButton>
           </Stack>
         </Box>
 
@@ -190,11 +234,9 @@ export default function LoginPage() {
           </Typography>
           <Typography
             sx={{
-              // Figma wordmark is 'Buffy' (renders as a bold serif); Buffy isn't
-              // bundled → bold-serif fallback matches the shape (placeholder brand).
-              fontFamily: "'Buffy', Georgia, 'Times New Roman', serif",
-              fontWeight: 700,
-              fontSize: 'clamp(28px, 3.2vw, 50px)', // 92:671 = 50px
+              fontFamily: "'Buffy', Georgia, serif",
+              fontWeight: 400, // 700 → 400 (Bold 웨이트 없음)
+              fontSize: 'clamp(28px, 3.2vw, 50px)',
               color: color.loginWordmark,
             }}
           >

@@ -48,11 +48,79 @@ export const tokens = {
     loginLink: '#a9a9a9', // footer links (92:652)
     loginSeparator: '#f4f4f4', // link separator |
     loginWordmark: '#42576c', // Marsh Mallow brand wordmark (92:671)
+    //login screen added(07/29)
+    loginOauthBorder: '#e6e6e6', // 간편로그인 버튼 보더 (782:4358)
+    loginOauthText: '#8b8b8b', // "Google로 로그인" 라벨 (782:4360)
+    // signup screen (356:1871)
+    signupLabel: '#9a9a9a', // 필드 라벨 (356:1897)
+    signupRequired: '#dd6e6e', // 필수 표시 * (356:1905)
+    signupFieldLine: '#d9d9d9', // 필드 밑줄 (356:1901)
+    signupCardShadow: 'rgba(0,0,0,0.3)', // 입력 카드 그림자 (356:1896)
+    signupDivider: '#e0e0e0', // 간편로그인 구분선 (356:1914)
+    signupDividerText: '#afafaf', // "간편로그인" (356:1916)
     // precision-qa deep-audit corrections
     calBorder: '#d9d9d9', // RangeCalendar container border (17:888)
     chipFilledGrayBg: 'rgba(200,209,215,0.62)', // filled gray tag bg (58:1066)
     newsTitle: '#3f3f3f', // ListRow news title (124:358)
     holdingsSub: '#bab3b3', // ListRow holdings sub-label (127:2358)
+    // trade journal (매수/매도 뱃지·카드)
+    sell: '#e85d5d', // SELL badge / card accent
+    sellBg: '#fff5f5', // SELL card soft fill
+    buyBadge: '#11acd0', // BUY badge (= selected cyan)
+    // 홈/내 계좌 (등락률 표시, 국내 관행: 상승=빨강/하락=파랑)
+    priceUp: '#e6483d', // 상승(양수 등락률)
+    priceDown: '#3b82f6', // 하락(음수 등락률)
+    // 가상계좌 폴더 트리맵 팔레트 (Figma 339:1043 히트맵 그룹)
+    heatmapPink: 'rgba(241,181,181,0.8)',
+    heatmapPinkSoft: 'rgba(241,181,181,0.5)',
+    heatmapBlue: '#bde8f2',
+    heatmapGreen: '#e5f3da',
+    // 숨기기 목록 아이콘 박스 (Figma 339:1317: 테슬라=blue accentBlue, 인텔=amber)
+    hideIconAmber: '#bf6a02',
+    // 기업 상세 화면 (Figma 385:2425, 거래 팝업 834:7018)
+    stockAppBg: '#e9eff3',
+    stockPanelBg: '#eef5ff',
+    stockCardBorder: '#d3d3d3',
+    stockPlaceholder: '#d9d9d9',
+    stockArticlePlaceholder: '#626262',
+    stockMuted: '#9e9e9e',
+    stockMeta: '#919191',
+    stockPositive: '#4ace55',
+    stockSoftCyan: '#d9f2f7',
+    stockCyanText: '#008792',
+    stockAiText: '#888888',
+    stockArticleMeta: '#939393',
+    stockMetricBlue: '#3478f6',
+    stockMetricGreen: '#2e9b6f',
+    stockMetricOrange: '#e08a00',
+    stockMetricPurple: '#7a4ddb',
+    stockMetricGreenBg: '#eaf8f1',
+    stockMetricOrangeBg: '#fff4e4',
+    stockMetricPurpleBg: '#f2ecff',
+    stockDialogBorder: '#d4d4d4',
+    stockDialogOptionBorder: '#b9b9b9',
+    // 거래 팝업 리디자인 (Figma 834:7454 시장가 / 834:6742 지정가)
+    tradePanelBorder: '#c5c5c5', // 종목정보·주문내역·호가창·주문 패널 카드 보더
+    tradeSubCardBg: '#f5f5f5', // 주문 수량 / 예상 금액 내부 카드
+    tradeSubCardBorder: '#dadada',
+    tradeFieldBorder: '#cbcbcb', // 수량·호가 입력 박스 / 스테퍼 버튼
+    tradeEmptyText: '#bbbbbb', // 주문 내역 없음 안내 문구
+    tradeColHeader: '#646464', // 호가창 컬럼 헤더 (가격/수량)
+    tradeAskBg: '#fff2f2', // 매도 호가 배경
+    tradeAskText: '#ff6363',
+    tradeBidBg: '#f0f8ff', // 매수 호가 배경
+    tradeBidText: '#2097ff',
+    tradeQtyCellBg: '#f5f5f5', // 호가창 수량 셀 배경
+    tradeCurrentPrice: '#11acd0', // 호가창 현재가
+    tradeBuyBg: '#defcff', // 시장가 매수 버튼
+    tradeBuyBorder: '#02626a',
+    tradeBuyText: '#02626a',
+    tradeSellBg: '#ebffed', // 시장가 매도 버튼
+    tradeSellBorder: '#00a30e',
+    tradeSellText: '#006208',
+    tradeTabActive: '#2fc4d1', // 시장가/지정가 활성 탭
+    tradeTabInactive: '#b6b6b6',
+    tradeSubLabel: '#777777', // 판매/구매 가능 수량 라벨
   },
   radius: 8, // buttons (14:359)
   radiusField: 10, // chips & filled search fields (17:441 / 16:395)

@@ -1,0 +1,378 @@
+import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import { format } from 'date-fns';
+import { AppShell } from '../../components/AppShell';
+import { AccountSidebar } from '../../components/AccountSidebar';
+import { FolderModal } from '../../components/FolderModal';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { useScreenTransition } from '../../hooks/useScreenTransition';
+import type {
+  AccountSubTab,
+  HiddenStock,
+  HoldingStock,
+  InvestmentFolder,
+} from '../../types/account';
+import {
+  createVirtualAccount,
+  deleteVirtualAccount,
+  getVirtualAccountDetail,
+  getVirtualAccounts,
+  renameVirtualAccount,
+} from '../../features/assets/assetsApi';
+import { ApiError } from '../../lib/api';
+import { AssetStatusScreen } from './AssetStatusScreen';
+import { VirtualAccountScreen } from './VirtualAccountScreen';
+import { HideListScreen } from './HideListScreen';
+import { HideConfirmScreen } from './HideConfirmScreen';
+import {
+  DEFAULT_HIDE_DURATION_DAYS,
+  HOLDING_STOCKS,
+  INITIAL_HIDDEN_STOCKS,
+} from './mock-data';
+
+const HIDE_GUIDE_PHRASE = '이 종목을 숨김 처리합니다';
+
+/**
+ * "내 계좌" 화면 — 좌측 서브 내비게이션 + 자산 현황/가상 계좌/숨기기 화면 조합.
+ * my-react-ts 프로토타입(Dashboard.tsx)의 상태/핸들러 구조를 그대로 이식하고,
+ * UI는 기존 디자인 시스템 컴포넌트(BaseCard/ListRow/Chip 등)로 재조립했다.
+ */
+export default function AccountPage() {
+  const subTabTransition = useScreenTransition<AccountSubTab>('자산 현황');
+  const [hideFlow, setHideFlow] = useState<'list' | 'confirm'>('list');
+  const [pendingHideTarget, setPendingHideTarget] = useState<string | null>(
+    null,
+  );
+  const [hideConfirmText, setHideConfirmText] = useState('');
+  const [hiddenStocks, setHiddenStocks] = useState<HiddenStock[]>(
+    INITIAL_HIDDEN_STOCKS,
+  );
+
+  const [folders, setFolders] = useState<InvestmentFolder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState('');
+  const [isLoadingFolders, setIsLoadingFolders] = useState(true);
+  const [holdingsLoadedFolderId, setHoldingsLoadedFolderId] = useState<
+    string | null
+  >(null);
+  const [folderMaxCount, setFolderMaxCount] = useState<number | null>(null);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [folderModalError, setFolderModalError] = useState<string | null>(null);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
+  const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+  const [renameFolderName, setRenameFolderName] = useState('');
+  const [renameModalError, setRenameModalError] = useState<string | null>(null);
+  const [isRenamingFolder, setIsRenamingFolder] = useState(false);
+
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetLabel, setDeleteTargetLabel] = useState('');
+  const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
+  const [isDeletingFolder, setIsDeletingFolder] = useState(false);
+
+  useEffect(() => {
+    void getVirtualAccounts()
+      .then(({ portfolios, maxCount }) => {
+        const mapped = portfolios.map((account): InvestmentFolder => ({
+          id: String(account.id),
+          label: account.name,
+          holdings: [],
+        }));
+        setFolders(mapped);
+        setSelectedFolderId(mapped[0]?.id ?? '');
+        setFolderMaxCount(maxCount);
+      })
+      .catch(() => setFolders([]))
+      .finally(() => setIsLoadingFolders(false));
+  }, []);
+
+  useEffect(() => {
+    const portfolioId = Number(selectedFolderId);
+    if (!selectedFolderId || !Number.isFinite(portfolioId)) return;
+
+    let cancelled = false;
+    void getVirtualAccountDetail(portfolioId)
+      .then((detail) => {
+        if (cancelled) return;
+        const holdings = detail.holdings.map((h): HoldingStock => ({
+          id: h.stockCode,
+          name: h.stockName,
+          amount: h.evaluationAmount,
+          changePct: h.returnRate,
+        }));
+        setFolders((prev) =>
+          prev.map((f) => (f.id === selectedFolderId ? { ...f, holdings } : f)),
+        );
+      })
+      .catch(() => {
+        /** 보유 종목을 못 불러와도 계좌 자체는 그대로 유지한다. */
+      })
+      .finally(() => {
+        if (!cancelled) setHoldingsLoadedFolderId(selectedFolderId);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFolderId]);
+
+  const isLoadingHoldings =
+    selectedFolderId !== '' && holdingsLoadedFolderId !== selectedFolderId;
+
+  function handleSelectSubTab(tab: AccountSubTab) {
+    subTabTransition.navigate(tab);
+    if (tab === '숨기기') setHideFlow('list');
+  }
+
+  function handleStartHide(stockName: string) {
+    setPendingHideTarget(stockName);
+    setHideConfirmText('');
+    subTabTransition.navigate('숨기기');
+    setHideFlow('confirm');
+  }
+
+  function handleConfirmHide() {
+    if (hideConfirmText.trim() !== HIDE_GUIDE_PHRASE) return;
+    if (pendingHideTarget) {
+      setHiddenStocks((prev) => [
+        ...prev,
+        {
+          id: `hs-${Date.now()}`,
+          name: pendingHideTarget,
+          hiddenDate: format(new Date(), 'yyyy-MM-dd'),
+          remainingDays: DEFAULT_HIDE_DURATION_DAYS,
+        },
+      ]);
+    }
+    setPendingHideTarget(null);
+    setHideFlow('list');
+  }
+
+  function handleCancelHide() {
+    setPendingHideTarget(null);
+    setHideFlow('list');
+  }
+
+  function handleCloseFolderModal() {
+    setShowFolderModal(false);
+    setFolderModalError(null);
+  }
+
+  async function handleAddFolder() {
+    const name = newFolderName.trim();
+    if (!name) return;
+
+    setIsCreatingFolder(true);
+    setFolderModalError(null);
+    try {
+      const account = await createVirtualAccount(name);
+      const folder: InvestmentFolder = {
+        id: String(account.id),
+        label: account.name,
+        holdings: [],
+      };
+      setFolders((prev) => [...prev, folder]);
+      setSelectedFolderId(folder.id);
+      setNewFolderName('');
+      setShowFolderModal(false);
+    } catch (error) {
+      setFolderModalError(
+        error instanceof ApiError
+          ? error.message
+          : '가상계좌 생성에 실패했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsCreatingFolder(false);
+    }
+  }
+
+  function handleOpenRenameModal(folderId: string) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    setRenameTargetId(folderId);
+    setRenameFolderName(folder.label);
+    setRenameModalError(null);
+  }
+
+  function handleCloseRenameModal() {
+    setRenameTargetId(null);
+    setRenameModalError(null);
+  }
+
+  async function handleRenameFolder() {
+    const name = renameFolderName.trim();
+    if (!name || !renameTargetId) return;
+
+    const portfolioId = Number(renameTargetId);
+    if (!Number.isFinite(portfolioId)) return;
+
+    setIsRenamingFolder(true);
+    setRenameModalError(null);
+    try {
+      const updated = await renameVirtualAccount(portfolioId, name);
+      setFolders((prev) =>
+        prev.map((f) =>
+          f.id === renameTargetId ? { ...f, label: updated.name } : f,
+        ),
+      );
+      setRenameTargetId(null);
+    } catch (error) {
+      setRenameModalError(
+        error instanceof ApiError
+          ? error.message
+          : '가상계좌 이름 변경에 실패했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsRenamingFolder(false);
+    }
+  }
+
+  function handleOpenDeleteConfirm(folderId: string) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    setDeleteTargetId(folderId);
+    setDeleteTargetLabel(folder.label);
+    setDeleteModalError(null);
+  }
+
+  function handleCloseDeleteConfirm() {
+    setDeleteTargetId(null);
+    setDeleteModalError(null);
+  }
+
+  async function handleDeleteFolder() {
+    if (!deleteTargetId) return;
+
+    const portfolioId = Number(deleteTargetId);
+    if (!Number.isFinite(portfolioId)) return;
+
+    setIsDeletingFolder(true);
+    setDeleteModalError(null);
+    try {
+      await deleteVirtualAccount(portfolioId);
+      const remaining = folders.filter((f) => f.id !== deleteTargetId);
+      setFolders(remaining);
+      if (selectedFolderId === deleteTargetId) {
+        setSelectedFolderId(remaining[0]?.id ?? '');
+      }
+      setDeleteTargetId(null);
+    } catch (error) {
+      setDeleteModalError(
+        error instanceof ApiError
+          ? error.message
+          : '가상계좌 삭제에 실패했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsDeletingFolder(false);
+    }
+  }
+
+  const subTab = subTabTransition.displayed;
+  const hiddenNames = new Set(hiddenStocks.map((s) => s.name));
+  const visibleHoldings = HOLDING_STOCKS.filter(
+    (h) => !hiddenNames.has(h.name),
+  );
+  const visibleFolders = folders.map((f) => ({
+    ...f,
+    holdings: f.holdings.filter((h) => !hiddenNames.has(h.name)),
+  }));
+
+  return (
+    <AppShell activeNav="account">
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 3,
+          width: '100%',
+          minHeight: 0,
+        }}
+      >
+        <AccountSidebar active={subTab} onSelect={handleSelectSubTab} />
+
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            overflowY: 'auto',
+            transition: 'opacity 0.15s',
+            opacity: subTabTransition.visible ? 1 : 0,
+          }}
+        >
+          {subTab === '자산 현황' && (
+            <AssetStatusScreen
+              holdings={visibleHoldings}
+              onHide={handleStartHide}
+            />
+          )}
+          {subTab === '가상 계좌' && (
+            <VirtualAccountScreen
+              folders={visibleFolders}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={setSelectedFolderId}
+              onOpenFolderModal={() => setShowFolderModal(true)}
+              onOpenRenameModal={handleOpenRenameModal}
+              onOpenDeleteConfirm={handleOpenDeleteConfirm}
+              onHide={handleStartHide}
+              isLoadingFolders={isLoadingFolders}
+              isLoadingHoldings={isLoadingHoldings}
+              disableAddFolder={
+                folderMaxCount !== null && folders.length >= folderMaxCount
+              }
+            />
+          )}
+          {subTab === '숨기기' && hideFlow === 'list' && (
+            <HideListScreen
+              hiddenStocks={hiddenStocks}
+              onStartHide={() => handleStartHide('새 숨김 대상 종목')}
+            />
+          )}
+          {subTab === '숨기기' && hideFlow === 'confirm' && (
+            <HideConfirmScreen
+              targetName={pendingHideTarget}
+              guidePhrase={HIDE_GUIDE_PHRASE}
+              value={hideConfirmText}
+              onChange={setHideConfirmText}
+              onCancel={handleCancelHide}
+              onConfirm={handleConfirmHide}
+            />
+          )}
+        </Box>
+      </Box>
+
+      <FolderModal
+        open={showFolderModal}
+        value={newFolderName}
+        onChange={setNewFolderName}
+        onCancel={handleCloseFolderModal}
+        onConfirm={() => void handleAddFolder()}
+        error={folderModalError}
+        isSubmitting={isCreatingFolder}
+      />
+
+      <FolderModal
+        open={renameTargetId !== null}
+        value={renameFolderName}
+        onChange={setRenameFolderName}
+        onCancel={handleCloseRenameModal}
+        onConfirm={() => void handleRenameFolder()}
+        error={renameModalError}
+        isSubmitting={isRenamingFolder}
+        title="가상계좌 이름 변경"
+        confirmLabel="변경"
+        submittingLabel="변경 중..."
+      />
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="가상계좌 삭제"
+        description={`'${deleteTargetLabel}' 계좌를 삭제할까요? 담긴 종목 정보도 함께 삭제되며, 되돌릴 수 없어요.`}
+        onCancel={handleCloseDeleteConfirm}
+        onConfirm={() => void handleDeleteFolder()}
+        error={deleteModalError}
+        isSubmitting={isDeletingFolder}
+        confirmLabel="삭제"
+        submittingLabel="삭제 중..."
+      />
+    </AppShell>
+  );
+}

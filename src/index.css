@@ -1,3 +1,27 @@
+@import 'tailwindcss';
+
+@font-face {
+  font-family: 'Buffy';
+  src: url('./assets/fonts/Buffy-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Buffy';
+  src: url('./assets/fonts/Buffy-LightItalic.woff2') format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Buffy';
+  src: url('./assets/fonts/Buffy.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --accent: #2fc4d1;
   --shadow:
@@ -22,3 +46,4 @@
 body {
   margin: 0;
 }
+

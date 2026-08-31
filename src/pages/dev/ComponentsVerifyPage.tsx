@@ -3,20 +3,20 @@
 // the same scale so drift is judged large & side-by-side, not on a tiny full page.
 import type { ReactNode } from 'react';
 import Box from '@mui/material/Box';
-import { Button } from '../components/Button';
-import { Chip } from '../components/Chip';
-import { Switch } from '../components/Switch';
-import { Fab } from '../components/Fab';
-import { Select } from '../components/Select';
-import { SearchField } from '../components/SearchField';
-import { Pagination } from '../components/Pagination';
-import { IconTab } from '../components/IconTab';
-import { BaseCard } from '../components/BaseCard';
-import { NewsTab } from '../components/NewsTab';
-import { ListRow } from '../components/ListRow';
-import { CtaButton } from '../components/CtaButton';
-import { RangeCalendar } from '../components/RangeCalendar';
-import LoginPage from './login';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
+import { Switch } from '../../components/Switch';
+import { Fab } from '../../components/Fab';
+import { Select } from '../../components/Select';
+import { SearchField } from '../../components/SearchField';
+import { Pagination } from '../../components/Pagination';
+import { IconTab } from '../../components/IconTab';
+import { BaseCard } from '../../components/BaseCard';
+import { NewsTab } from '../../components/NewsTab';
+import { ListRow } from '../../components/ListRow';
+import { CtaButton } from '../../components/CtaButton';
+import { RangeCalendar } from '../../components/RangeCalendar';
+import LoginPage from '../login/LoginPage';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonthOutlined';
 
 const months = Array.from({ length: 12 }, (_, i) => ({

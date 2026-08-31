@@ -1,0 +1,1079 @@
+import { useState, type ChangeEvent, type ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import { Button } from '../../../components/Button';
+import type {
+  EmotionScore,
+  GoalEvaluationCode,
+  GoalHoldPeriod,
+  SellReasonCode,
+  TradeJournalItem,
+  TradeType,
+} from '../types';
+import {
+  GOAL_EVAL_OPTIONS,
+  HOLD_PERIOD_OPTIONS,
+  SELL_REASON_OPTIONS,
+} from '../types';
+import {
+  formatMarketCap,
+  formatPrice,
+  formatTradeDateTime,
+} from '../filter-items';
+import { tokens } from '../../../theme/tokens';
+import { LAYOUT } from '../layout';
+import { EmotionPicker } from './EmotionPicker';
+
+const { color, fontFamily } = tokens;
+const { write } = LAYOUT;
+
+const BUY_ACCENT = '#11acd0';
+const SELL_ACCENT = '#2e9b4f';
+const CARD_BG = '#f5f7f9';
+const INPUT_BORDER = '#d7d7d7';
+const MAX_BUY_REASON = 300;
+const MAX_CUSTOM_HOLD_PERIOD = 255;
+const MAX_SELL_DETAIL = 191;
+const MAX_MEMO = 300;
+
+export type JournalWritePayload = {
+  orderId: number;
+  diaryId?: number;
+  date: string;
+} & (
+  | {
+      type: 'BUY';
+      emotion: EmotionScore;
+      buyReason: string;
+      goalPrice?: number;
+      goalHoldPeriod: GoalHoldPeriod;
+      customGoalHoldPeriod?: string;
+      memo?: string;
+    }
+  | {
+      type: 'SELL';
+      emotion: EmotionScore;
+      sellReasonCode: SellReasonCode;
+      sellReasonDetail?: string;
+      goalEvaluationCode?: GoalEvaluationCode;
+      goalEvaluationDetail?: string;
+      memo?: string;
+    }
+);
+
+export interface JournalWriteDialogProps {
+  open: boolean;
+  item: TradeJournalItem | null;
+  mode: 'create' | 'edit';
+  onClose: () => void;
+  onSave: (payload: JournalWritePayload) => void;
+  saving?: boolean;
+  error?: string | null;
+  onAutoFill?: () => void;
+  autoFillLoading?: boolean;
+  reloadVersion?: number;
+  onTradeTypeChange?: (type: TradeType) => void;
+}
+
+/** Figma 360:2125 / 377:2221 — 일기 쓰기 팝업 **/
+export function JournalWriteDialog({
+  open,
+  item,
+  mode,
+  onClose,
+  onSave,
+  saving = false,
+  error,
+  onAutoFill,
+  autoFillLoading = false,
+  reloadVersion = 0,
+  onTradeTypeChange,
+}: JournalWriteDialogProps) {
+  if (!item) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      scroll="paper"
+      slotProps={{
+        paper: {
+          sx: {
+            width: write.width,
+            maxWidth: `min(${write.width}px, 94vw)`,
+            maxHeight: write.maxHeight,
+            borderRadius: `${write.radius}px`,
+            overflow: 'hidden',
+            fontFamily,
+          },
+        },
+        backdrop: {
+          sx: { backgroundColor: 'rgba(0,0,0,0.28)' },
+        },
+      }}
+    >
+      <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: write.padX,
+            pt: '24px',
+            pb: '14px',
+            flexShrink: 0,
+          }}
+        >
+          <Typography
+            sx={{ fontSize: write.titleSize, fontWeight: 700, color: '#000' }}
+          >
+            매매 일기 작성
+            {mode === 'edit' ? ' (수정)' : ''}
+          </Typography>
+          <IconButton onClick={onClose} aria-label="닫기" size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        <WriteForm
+          key={`${item.id}-${mode}-${String(open)}-${reloadVersion}`}
+          item={item}
+          onSave={onSave}
+          saving={saving}
+          error={error}
+          onAutoFill={onAutoFill}
+          autoFillLoading={autoFillLoading}
+          onTradeTypeChange={onTradeTypeChange}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function WriteForm({
+  item,
+  onSave,
+  saving,
+  error,
+  onAutoFill,
+  autoFillLoading,
+  onTradeTypeChange,
+}: {
+  item: TradeJournalItem;
+  onSave: (payload: JournalWritePayload) => void;
+  saving: boolean;
+  error?: string | null;
+  onAutoFill?: () => void;
+  autoFillLoading: boolean;
+  onTradeTypeChange?: (type: TradeType) => void;
+}) {
+  const isBuy = item.tradeType === 'BUY';
+  const accent = isBuy ? BUY_ACCENT : SELL_ACCENT;
+  const buy = item.buyDiary;
+  const sell = item.sellDiary;
+
+  const holdPreset = buy?.goalHoldPeriod ?? 'MID_TERM';
+
+  const [buyReason, setBuyReason] = useState(buy?.buyReason ?? '');
+  const [goalPrice, setGoalPrice] = useState(
+    buy?.goalPrice != null ? String(buy.goalPrice) : '',
+  );
+  const [goalHoldPeriod, setGoalHoldPeriod] =
+    useState<GoalHoldPeriod>(holdPreset);
+  const [holdOtherText, setHoldOtherText] = useState(
+    buy?.customGoalHoldPeriod ?? '',
+  );
+  const [emotion, setEmotion] = useState<EmotionScore | undefined>(
+    buy?.emotion ?? sell?.emotion,
+  );
+  const [memo, setMemo] = useState(buy?.memo ?? '');
+
+  const [sellReasonCode, setSellReasonCode] = useState<
+    SellReasonCode | undefined
+  >(sell?.sellReasonCode);
+  const [sellReasonDetail, setSellReasonDetail] = useState(
+    sell?.sellReasonDetail ?? '',
+  );
+  const [goalEvalCode, setGoalEvalCode] = useState<
+    GoalEvaluationCode | undefined
+  >(sell?.goalEvaluationCode);
+  const [goalEvalDetail, setGoalEvalDetail] = useState(
+    sell?.goalEvaluationDetail ?? '',
+  );
+  const [sellMemo, setSellMemo] = useState(sell?.memo ?? '');
+
+  const isHoldOther = goalHoldPeriod === 'CUSTOM';
+  const normalizedGoalPrice = goalPrice.replace(/,/g, '').trim();
+  const parsedGoalPrice =
+    normalizedGoalPrice.length > 0 ? Number(normalizedGoalPrice) : undefined;
+  const goalPriceValid =
+    normalizedGoalPrice.length === 0 ||
+    (/^\d+(?:\.\d{1,2})?$/.test(normalizedGoalPrice) &&
+      parsedGoalPrice !== undefined &&
+      parsedGoalPrice > 0);
+
+  const buyValid =
+    buyReason.trim().length > 0 &&
+    buyReason.length <= MAX_BUY_REASON &&
+    Boolean(emotion) &&
+    goalPriceValid &&
+    memo.length <= MAX_MEMO &&
+    (!isHoldOther ||
+      (holdOtherText.trim().length > 0 &&
+        holdOtherText.length <= MAX_CUSTOM_HOLD_PERIOD));
+  const sellValid =
+    Boolean(sellReasonCode) &&
+    Boolean(emotion) &&
+    sellReasonDetail.length <= MAX_SELL_DETAIL &&
+    goalEvalDetail.length <= MAX_SELL_DETAIL &&
+    sellMemo.length <= MAX_MEMO;
+  const canSave = isBuy ? buyValid : sellValid;
+
+  function handleSave() {
+    if (!canSave || !emotion) return;
+    if (item.tradeType === 'BUY') {
+      onSave({
+        orderId: item.orderId,
+        diaryId: item.diaryId,
+        date: item.diaryDate,
+        type: 'BUY',
+        buyReason: buyReason.trim(),
+        goalPrice: parsedGoalPrice,
+        goalHoldPeriod,
+        customGoalHoldPeriod: isHoldOther ? holdOtherText.trim() : undefined,
+        emotion,
+        memo: memo.trim() || undefined,
+      });
+    } else {
+      onSave({
+        orderId: item.orderId,
+        diaryId: item.diaryId,
+        date: item.diaryDate,
+        type: 'SELL',
+        sellReasonCode: sellReasonCode!,
+        sellReasonDetail: sellReasonDetail.trim() || undefined,
+        goalEvaluationCode: goalEvalCode,
+        goalEvaluationDetail: goalEvalDetail.trim() || undefined,
+        emotion,
+        memo: sellMemo.trim() || undefined,
+      });
+    }
+  }
+
+  return (
+    <>
+      <Box
+        sx={{
+          px: write.padX,
+          pb: 2,
+          overflowY: 'auto',
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        <TradeTypeTabs
+          tradeType={item.tradeType}
+          onChange={onTradeTypeChange}
+        />
+
+        <Stack spacing={write.sectionGap} sx={{ mt: '28px' }}>
+          <Section
+            n={1}
+            title="거래 정보"
+            accent={accent}
+            body={
+              <InfoCard>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    rowGap: '20px',
+                    columnGap: 3,
+                  }}
+                >
+                  <Field label="종목명" value={item.corpName} />
+                  <Field
+                    label={isBuy ? '매수 일시' : '매도 일시'}
+                    value={formatTradeDateTime(item.tradedAt)}
+                  />
+                  <Field
+                    label={isBuy ? '매수가' : '매도가'}
+                    value={item.price != null ? formatPrice(item.price) : '-'}
+                  />
+                  <Field label="수량" value={`${item.amount}주`} />
+                  <Field
+                    label="총 금액"
+                    value={
+                      item.totalPrice != null
+                        ? formatPrice(item.totalPrice)
+                        : '-'
+                    }
+                  />
+                </Box>
+              </InfoCard>
+            }
+          />
+
+          <Section
+            n={2}
+            title="거래 당시 기업 정보"
+            accent={accent}
+            body={
+              <InfoCard sx={{ minHeight: 160 }}>
+                <Box sx={{ display: 'flex', gap: 2, minHeight: 120 }}>
+                  <Box
+                    sx={{
+                      flex: '0 0 42%',
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 3,
+                      alignContent: 'start',
+                    }}
+                  >
+                    <Field
+                      label="PER (주가수익비율)"
+                      value={item.per?.toFixed(1) ?? '-'}
+                    />
+                    <Field
+                      label="PBR (주가순자산비율)"
+                      value={item.pbr?.toFixed(1) ?? '-'}
+                    />
+                    <Field
+                      label="시가 총액"
+                      value={formatMarketCap(item.marketCap)}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      width: '1px',
+                      alignSelf: 'stretch',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '14px',
+                        color: color.textSecondary,
+                        mb: 1.5,
+                      }}
+                    >
+                      당시 캔들 차트
+                    </Typography>
+                    <Box
+                      sx={{
+                        height: 88,
+                        borderRadius: '8px',
+                        backgroundColor: '#d9d9d9',
+                        backgroundImage: item.candle
+                          ? `url(${item.candle})`
+                          : undefined,
+                        backgroundSize: 'cover',
+                      }}
+                    />
+                  </Box>
+                </Box>
+              </InfoCard>
+            }
+          />
+
+          {isBuy ? (
+            <>
+              <Section
+                n={3}
+                title="매수 이유"
+                required
+                accent={accent}
+                body={
+                  <MultilineInput
+                    value={buyReason}
+                    onChange={setBuyReason}
+                    placeholder="자유롭게 작성해주세요."
+                    minHeight={111}
+                    maxLength={MAX_BUY_REASON}
+                  />
+                }
+              />
+
+              <Section
+                n={4}
+                title="투자 계획"
+                accent={accent}
+                body={
+                  <Box sx={{ display: 'flex', gap: '15px' }}>
+                    <InfoCard
+                      sx={{ flex: '0 0 360px', height: 160, p: '20px 28px' }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: '16px',
+                          fontWeight: 500,
+                          color: '#393939',
+                          mb: '11px',
+                        }}
+                      >
+                        목표 주가
+                      </Typography>
+                      <Box
+                        component="input"
+                        value={goalPrice}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          setGoalPrice(e.target.value)
+                        }
+                        placeholder="예: 90,000"
+                        inputMode="decimal"
+                        aria-invalid={!goalPriceValid}
+                        sx={{
+                          width: 347,
+                          maxWidth: '100%',
+                          height: 44,
+                          borderRadius: '8px',
+                          border: `1px solid ${goalPriceValid ? INPUT_BORDER : '#e5484d'}`,
+                          backgroundColor: color.white,
+                          px: '20px',
+                          fontSize: '0.875rem',
+                          fontFamily,
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          '&::placeholder': { color: '#bcbcbc' },
+                          '&:focus': { borderColor: accent },
+                        }}
+                      />
+                      {!goalPriceValid ? (
+                        <Typography
+                          role="alert"
+                          sx={{ mt: 0.75, fontSize: '12px', color: '#c92a2a' }}
+                        >
+                          0보다 큰 숫자를 소수점 둘째 자리까지 입력해주세요.
+                        </Typography>
+                      ) : null}
+                    </InfoCard>
+                    <InfoCard sx={{ flex: 1, height: 160, p: '20px 28px' }}>
+                      <Typography
+                        sx={{
+                          fontSize: '16px',
+                          fontWeight: 500,
+                          color: '#393939',
+                          mb: 2,
+                        }}
+                      >
+                        목표 보유 기간
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '24px 20px',
+                        }}
+                      >
+                        {HOLD_PERIOD_OPTIONS.map((opt) => (
+                          <RadioOption
+                            key={opt.value}
+                            label={opt.label}
+                            selected={goalHoldPeriod === opt.value}
+                            onClick={() => setGoalHoldPeriod(opt.value)}
+                            accent={accent}
+                          />
+                        ))}
+                      </Box>
+                      {isHoldOther ? (
+                        <Box
+                          component="input"
+                          value={holdOtherText}
+                          maxLength={MAX_CUSTOM_HOLD_PERIOD}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setHoldOtherText(e.target.value)
+                          }
+                          placeholder="보유 기간을 직접 입력해주세요."
+                          sx={{
+                            mt: 2,
+                            width: '100%',
+                            height: 44,
+                            borderRadius: '8px',
+                            border: `1px solid ${INPUT_BORDER}`,
+                            backgroundColor: color.white,
+                            px: '16px',
+                            fontSize: '14px',
+                            fontFamily,
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            '&::placeholder': { color: '#bcbcbc' },
+                            '&:focus': { borderColor: accent },
+                          }}
+                        />
+                      ) : null}
+                    </InfoCard>
+                  </Box>
+                }
+              />
+
+              <Section
+                n={5}
+                title="지금 감정"
+                required
+                accent={accent}
+                body={<EmotionPicker value={emotion} onChange={setEmotion} />}
+              />
+
+              <Section
+                n={6}
+                title="추가 메모 (선택)"
+                accent={accent}
+                body={
+                  <MultilineInput
+                    value={memo}
+                    onChange={setMemo}
+                    placeholder="기타 메모를 자유롭게 작성해주세요."
+                    minHeight={111}
+                    maxLength={MAX_MEMO}
+                  />
+                }
+              />
+            </>
+          ) : (
+            <>
+              <Section
+                n={3}
+                title="실현 손익"
+                accent={accent}
+                body={
+                  <InfoCard
+                    sx={{
+                      backgroundColor: 'rgba(146,231,153,0.18)',
+                      border: '1px solid #c8e6c9',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-around',
+                        py: 2,
+                        minHeight: 88,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            lineHeight: 1.2,
+                            color: color.textSecondary,
+                          }}
+                        >
+                          실현 손익 (세전)
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: '1.375rem',
+                            lineHeight: 1.2,
+                            fontWeight: 700,
+                            color: SELL_ACCENT,
+                          }}
+                        >
+                          {item.realizedProfit != null
+                            ? `${item.realizedProfit >= 0 ? '+ ' : ''}${formatPrice(item.realizedProfit)}`
+                            : '-'}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          width: '1px',
+                          alignSelf: 'stretch',
+                          minHeight: 56,
+                          backgroundColor: '#d0d0d0',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            lineHeight: 1.2,
+                            color: color.textSecondary,
+                          }}
+                        >
+                          수익률
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: '1.375rem',
+                            lineHeight: 1.2,
+                            fontWeight: 700,
+                            color: SELL_ACCENT,
+                          }}
+                        >
+                          {item.returnRate != null
+                            ? `${item.returnRate >= 0 ? '+ ' : ''}${item.returnRate.toFixed(2)}%`
+                            : '-'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </InfoCard>
+                }
+              />
+
+              <Section
+                n={4}
+                title="매도 이유"
+                required
+                accent={accent}
+                body={
+                  <Stack spacing={2}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '20px 28px',
+                      }}
+                    >
+                      {SELL_REASON_OPTIONS.map((opt) => (
+                        <RadioOption
+                          key={opt.value}
+                          label={opt.label}
+                          selected={sellReasonCode === opt.value}
+                          onClick={() => setSellReasonCode(opt.value)}
+                          accent={accent}
+                        />
+                      ))}
+                    </Box>
+                    <MultilineInput
+                      value={sellReasonDetail}
+                      onChange={setSellReasonDetail}
+                      placeholder="기타 이유를 입력해주세요."
+                      minHeight={56}
+                      singleLine={sellReasonCode !== 'OTHER'}
+                      maxLength={MAX_SELL_DETAIL}
+                    />
+                  </Stack>
+                }
+              />
+
+              <Section
+                n={5}
+                title="지금 감정"
+                required
+                accent={accent}
+                body={<EmotionPicker value={emotion} onChange={setEmotion} />}
+              />
+
+              <Section
+                n={6}
+                title="목표 대비 평가"
+                accent={accent}
+                subtitle="(돌아보면 어땠나요?)"
+                body={
+                  <Stack spacing={2}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '20px 28px',
+                      }}
+                    >
+                      {GOAL_EVAL_OPTIONS.map((opt) => (
+                        <RadioOption
+                          key={opt.value}
+                          label={opt.label}
+                          selected={goalEvalCode === opt.value}
+                          onClick={() => setGoalEvalCode(opt.value)}
+                          accent={accent}
+                        />
+                      ))}
+                    </Box>
+                    <MultilineInput
+                      value={goalEvalDetail}
+                      onChange={setGoalEvalDetail}
+                      placeholder="기타 의견을 입력해주세요."
+                      minHeight={56}
+                      maxLength={MAX_SELL_DETAIL}
+                    />
+                  </Stack>
+                }
+              />
+
+              <Section
+                n={7}
+                title="회고 메모"
+                accent={accent}
+                body={
+                  <MultilineInput
+                    value={sellMemo}
+                    onChange={setSellMemo}
+                    placeholder="이번 거래에서 배운 점이나 느낀 점을 작성해주세요."
+                    minHeight={140}
+                    maxLength={MAX_MEMO}
+                  />
+                }
+              />
+            </>
+          )}
+        </Stack>
+      </Box>
+
+      <Box
+        sx={{
+          px: write.padX,
+          py: 2,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '12px',
+          flexShrink: 0,
+          borderTop: `1px solid ${color.border}`,
+        }}
+      >
+        {error ? (
+          <Typography
+            role="alert"
+            sx={{ mr: 'auto', alignSelf: 'center', color: '#c92a2a' }}
+          >
+            {error}
+          </Typography>
+        ) : null}
+        <Button
+          type="button"
+          disabled={!onAutoFill || autoFillLoading || saving}
+          onClick={onAutoFill}
+          aria-label="서버에 저장된 정보 다시 불러오기"
+          sx={{
+            width: write.saveW,
+            height: write.saveH,
+            minWidth: 0,
+            borderRadius: '16px',
+            p: 0,
+            fontSize: '0.9375rem',
+            fontWeight: 700,
+            '&.Mui-disabled': {
+              backgroundColor: '#d1d6db',
+              color: color.white,
+            },
+          }}
+        >
+          {autoFillLoading ? '불러오는 중…' : '자동 채우기'}
+        </Button>
+
+        <Box
+          component="button"
+          type="button"
+          disabled={!canSave || saving}
+          onClick={handleSave}
+          sx={{
+            width: write.saveW,
+            height: write.saveH,
+            border: 0,
+            borderRadius: '24px',
+            fontFamily,
+            fontSize: '0.9375rem',
+            fontWeight: 700,
+            cursor: canSave && !saving ? 'pointer' : 'not-allowed',
+            backgroundColor: canSave && !saving ? accent : '#c8c8c8',
+            color: color.white,
+            '&:hover': {
+              backgroundColor:
+                canSave && !saving
+                  ? isBuy
+                    ? '#0e9bb8'
+                    : '#278a45'
+                  : '#c8c8c8',
+            },
+          }}
+        >
+          {saving ? '저장 중…' : '일기 저장하기'}
+        </Box>
+      </Box>
+    </>
+  );
+}
+
+function TradeTypeTabs({
+  tradeType,
+  onChange,
+}: {
+  tradeType: TradeType;
+  onChange?: (type: TradeType) => void;
+}) {
+  const isBuy = tradeType === 'BUY';
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        maxWidth: 840,
+        height: write.tabH,
+        borderRadius: '12px',
+        backgroundColor: '#f4f3f5',
+        boxShadow: '0px 0px 3px 0px rgba(0,0,0,0.3)',
+        display: 'flex',
+        p: '4px',
+        boxSizing: 'border-box',
+        mx: 'auto',
+      }}
+    >
+      <Box
+        component="button"
+        type="button"
+        aria-pressed={isBuy}
+        onClick={() => onChange?.('BUY')}
+        sx={{
+          flex: 1,
+          border: 0,
+          borderRadius: '12px',
+          backgroundColor: isBuy ? color.white : 'transparent',
+          display: 'grid',
+          placeItems: 'center',
+          cursor: onChange ? 'pointer' : 'default',
+          fontFamily,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: isBuy ? write.tabFontActive : write.tabFont,
+            fontWeight: isBuy ? 700 : 500,
+            color: isBuy ? BUY_ACCENT : '#9a9a9a',
+          }}
+        >
+          매수
+        </Typography>
+      </Box>
+      <Box
+        component="button"
+        type="button"
+        aria-pressed={!isBuy}
+        onClick={() => onChange?.('SELL')}
+        sx={{
+          flex: 1,
+          border: 0,
+          borderRadius: '12px',
+          backgroundColor: !isBuy ? color.white : 'transparent',
+          display: 'grid',
+          placeItems: 'center',
+          cursor: onChange ? 'pointer' : 'default',
+          fontFamily,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: !isBuy ? write.tabFontActive : write.tabFont,
+            fontWeight: !isBuy ? 700 : 500,
+            color: !isBuy ? SELL_ACCENT : '#9a9a9a',
+          }}
+        >
+          매도
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+function Section({
+  n,
+  title,
+  required,
+  subtitle,
+  accent,
+  body,
+}: {
+  n: number;
+  title: string;
+  required?: boolean;
+  subtitle?: string;
+  accent: string;
+  body: ReactNode;
+}) {
+  return (
+    <Box>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '12px' }}
+      >
+        <Box
+          sx={{
+            width: write.counter,
+            height: write.counter,
+            borderRadius: '50%',
+            backgroundColor: accent,
+            color: color.white,
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '0.8125rem',
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          {n}
+        </Box>
+        <Typography
+          sx={{ fontSize: '1rem', fontWeight: 700, color: '#191919' }}
+        >
+          {title}
+          {required ? (
+            <Box component="span" sx={{ color: '#ff4d4d', ml: 0.5 }}>
+              *
+            </Box>
+          ) : null}
+          {subtitle ? (
+            <Box
+              component="span"
+              sx={{
+                ml: 1,
+                fontSize: '14px',
+                fontWeight: 400,
+                color: color.textSecondary,
+              }}
+            >
+              {subtitle}
+            </Box>
+          ) : null}
+        </Typography>
+      </Box>
+      {body}
+    </Box>
+  );
+}
+
+function InfoCard({ children, sx }: { children: ReactNode; sx?: object }) {
+  return (
+    <Box
+      sx={{
+        backgroundColor: CARD_BG,
+        borderRadius: '12px',
+        p: '28px 32px',
+        boxSizing: 'border-box',
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <Box>
+      <Typography
+        sx={{ fontSize: '14px', color: color.textSecondary, mb: '6px' }}
+      >
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#191919' }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+function MultilineInput({
+  value,
+  onChange,
+  placeholder,
+  minHeight = 111,
+  singleLine,
+  maxLength,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  minHeight?: number;
+  singleLine?: boolean;
+  maxLength?: number;
+}) {
+  return (
+    <Box
+      component={singleLine ? 'input' : 'textarea'}
+      value={value}
+      onChange={(e: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) =>
+        onChange(e.target.value)
+      }
+      placeholder={placeholder}
+      maxLength={maxLength}
+      sx={{
+        width: '100%',
+        minHeight,
+        height: singleLine ? minHeight : undefined,
+        borderRadius: '12px',
+        border: `1px solid ${INPUT_BORDER}`,
+        backgroundColor: color.white,
+        p: '22px 24px',
+        fontSize: '0.875rem',
+        fontFamily,
+        resize: singleLine ? 'none' : 'vertical',
+        outline: 'none',
+        boxSizing: 'border-box',
+        color: '#191919',
+        '&::placeholder': { color: '#bcbcbc' },
+        '&:focus': { borderColor: BUY_ACCENT },
+      }}
+    />
+  );
+}
+
+function RadioOption({
+  label,
+  selected,
+  onClick,
+  accent,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+  accent: string;
+}) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '10px',
+        border: 0,
+        background: 'transparent',
+        cursor: 'pointer',
+        p: 0,
+        fontFamily,
+      }}
+    >
+      <Box
+        sx={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          border: selected ? `7px solid ${accent}` : `2px solid #c0c0c0`,
+          boxSizing: 'border-box',
+          backgroundColor: color.white,
+          flexShrink: 0,
+        }}
+      />
+      <Typography
+        sx={{
+          fontSize: '16px',
+          fontWeight: selected ? 600 : 400,
+          color: '#393939',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+}
