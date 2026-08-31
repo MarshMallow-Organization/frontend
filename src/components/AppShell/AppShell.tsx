@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { SystemStyleObject } from '@mui/system';
 import type { Theme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -7,6 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { SearchField } from '../SearchField';
+import { CompanySearchDialog } from '../CompanySearchDialog';
 import ProfileMenu from './ProfileMenu';
 import inactiveHomeIcon from '../../assets/icons/homepage.svg';
 import { navigate } from '../../lib/navigation';
@@ -15,7 +16,7 @@ import { tokens } from '../../theme/tokens';
 const { color, fontFamily } = tokens;
 
 /** 상단 네비 활성 탭 **/
-export type AppShellNav = 'watchlist' | 'popular' | 'account' | 'journal';
+export type AppShellNav = 'popular' | 'account' | 'journal';
 
 const CHROME = {
   height: 166,
@@ -57,10 +58,6 @@ const NAV_TABS: Array<{
   label: string;
   path?: string;
 }> = [
-  {
-    id: 'watchlist',
-    label: '관심종목',
-  },
   {
     id: 'popular',
     label: '인기종목',
@@ -114,6 +111,8 @@ export function AppShell({
   navWidth,
   hideMenuIcon = false,
 }: AppShellProps) {
+  const [isCompanySearchOpen, setIsCompanySearchOpen] = useState(false);
+
   return (
     <Box
       sx={{
@@ -256,8 +255,15 @@ export function AppShell({
         <Box sx={{ flex: 1 }} />
 
         <SearchField
+          id="global-company-search"
           placeholder="관심있는 종목을 검색해보세요."
-          disabled
+          onClick={() => setIsCompanySearchOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setIsCompanySearchOpen(true);
+            }
+          }}
           sx={{
             width: CHROME.searchWidth,
             minWidth: 240,
@@ -334,6 +340,11 @@ export function AppShell({
           {children}
         </Box>
       </Box>
+
+      <CompanySearchDialog
+        open={isCompanySearchOpen}
+        onClose={() => setIsCompanySearchOpen(false)}
+      />
     </Box>
   );
 }
