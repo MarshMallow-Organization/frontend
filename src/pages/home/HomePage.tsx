@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import { AppShell, type AppShellNav } from '../../components/AppShell';
 import { CalendarCard } from './components/CalendarCard';
 import { AssetStatusCard } from './components/AssetStatusCard';
 import { AiInterpretationCard } from './components/AiInterpretationCard';
 import { NewsCard } from './components/NewsCard';
-import { ACCOUNTS } from '../account/mock-data';
+import {
+  getVirtualAccountAssetSummaries,
+  type VirtualAccountAssetSummary,
+} from '../../features/assets/assetsApi';
 import { FAVORITE_COMPANIES, NEWS_ITEMS } from './mock-data';
 
 // AppShell의 AppShellNav엔 아직 '홈' 상태가 없다(4개 탭만 정의됨, 팀원 소유 파일이라 수정하지
@@ -27,6 +30,28 @@ export default function HomePage() {
   );
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [virtualAccountAssets, setVirtualAccountAssets] = useState<
+    VirtualAccountAssetSummary[]
+  >([]);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    getVirtualAccountAssetSummaries()
+      .then((summaries) => {
+        if (active) setVirtualAccountAssets(summaries);
+      })
+      .catch(() => {
+        // 존재하지 않는 계좌는 카드에서 "계좌가 존재하지 않습니다"로 표시한다.
+        if (active) setVirtualAccountAssets([]);
+      })
+      .finally(() => {
+        if (active) setIsLoadingAccounts(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleAiInterpret() {
     setIsSummarizing(true);
@@ -75,7 +100,10 @@ export default function HomePage() {
         <Box
           sx={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}
         >
-          <AssetStatusCard accounts={ACCOUNTS} />
+          <AssetStatusCard
+            accounts={virtualAccountAssets}
+            loading={isLoadingAccounts}
+          />
           <AiInterpretationCard
             companies={FAVORITE_COMPANIES}
             selectedCompanyId={selectedCompanyId}

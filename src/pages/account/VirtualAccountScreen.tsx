@@ -266,7 +266,7 @@ export function VirtualAccountScreen({
         <Typography
           sx={{ fontSize: '0.8125rem', color: color.textSecondary, mb: 2 }}
         >
-          {selectedIndex >= 0 ? selectedIndex + 1 : 1}/{folders.length}
+          {folders.length === 0 ? 0 : selectedIndex + 1}/{folders.length}
         </Typography>
         <Typography sx={{ fontSize: '0.8125rem', color: color.textSecondary }}>
           보유 종목

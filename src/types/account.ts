@@ -5,12 +5,6 @@
 
 export type AccountSubTab = '자산 현황' | '가상 계좌' | '숨기기';
 
-export interface AccountRow {
-  id: string;
-  bankName: string;
-  amount: number;
-}
-
 export interface FavoriteCompany {
   id: string;
   name: string;

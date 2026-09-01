@@ -19,6 +19,10 @@ import {
   getVirtualAccounts,
   renameVirtualAccount,
 } from '../../features/assets/assetsApi';
+import {
+  getHiddenStocks,
+  type HiddenStockResultDto,
+} from '../../features/users/hiddenStocksApi';
 import { ApiError } from '../../lib/api';
 import { AssetStatusScreen } from './AssetStatusScreen';
 import { VirtualAccountScreen } from './VirtualAccountScreen';
@@ -31,6 +35,19 @@ import {
 } from './mock-data';
 
 const HIDE_GUIDE_PHRASE = '이 종목을 숨김 처리합니다';
+const REVEAL_GUIDE_PHRASE = '숨긴 종목 열람';
+const UNHIDE_GUIDE_PHRASE = '숨김 해제';
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function toHiddenStockView(dto: HiddenStockResultDto): HiddenStock {
+  const remainingMs = new Date(dto.hiddenUntil).getTime() - Date.now();
+  return {
+    id: dto.stockCode,
+    name: dto.stockName,
+    hiddenDate: dto.hiddenAt.slice(0, 10),
+    remainingDays: Math.max(0, Math.ceil(remainingMs / MS_PER_DAY)),
+  };
+}
 
 /**
  * "내 계좌" 화면 — 좌측 서브 내비게이션 + 자산 현황/가상 계좌/숨기기 화면 조합.
@@ -39,14 +56,19 @@ const HIDE_GUIDE_PHRASE = '이 종목을 숨김 처리합니다';
  */
 export default function AccountPage() {
   const subTabTransition = useScreenTransition<AccountSubTab>('자산 현황');
-  const [hideFlow, setHideFlow] = useState<'list' | 'confirm'>('list');
+  const [hideFlow, setHideFlow] = useState<
+    'list' | 'confirm' | 'confirmReveal' | 'confirmUnhide'
+  >('list');
   const [pendingHideTarget, setPendingHideTarget] = useState<string | null>(
     null,
   );
+  const [pendingUnhideTarget, setPendingUnhideTarget] =
+    useState<HiddenStock | null>(null);
   const [hideConfirmText, setHideConfirmText] = useState('');
-  const [hiddenStocks, setHiddenStocks] = useState<HiddenStock[]>(
-    INITIAL_HIDDEN_STOCKS,
-  );
+  const [hiddenStocks, setHiddenStocks] = useState<HiddenStock[]>([]);
+  const [isLoadingHiddenStocks, setIsLoadingHiddenStocks] = useState(true);
+  // 숨긴 종목은 평소엔 화면에 노출되지 않는다 — "숨긴 종목 열람"을 눌러야 펼쳐진다.
+  const [hiddenListRevealed, setHiddenListRevealed] = useState(false);
 
   const [folders, setFolders] = useState<InvestmentFolder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState('');
@@ -87,6 +109,24 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    void getHiddenStocks()
+      .then(({ hiddenStocks: fetched }) => {
+        if (active) setHiddenStocks(fetched.map(toHiddenStockView));
+      })
+      .catch(() => {
+        // GET /users/me/hidden-stocks가 아직 백엔드에 구현되지 않아 실패할 수 있다.
+        if (active) setHiddenStocks(INITIAL_HIDDEN_STOCKS);
+      })
+      .finally(() => {
+        if (active) setIsLoadingHiddenStocks(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const portfolioId = Number(selectedFolderId);
     if (!selectedFolderId || !Number.isFinite(portfolioId)) return;
 
@@ -121,7 +161,10 @@ export default function AccountPage() {
 
   function handleSelectSubTab(tab: AccountSubTab) {
     subTabTransition.navigate(tab);
-    if (tab === '숨기기') setHideFlow('list');
+    if (tab === '숨기기') {
+      setHideFlow('list');
+      setHiddenListRevealed(false);
+    }
   }
 
   function handleStartHide(stockName: string) {
@@ -150,6 +193,47 @@ export default function AccountPage() {
 
   function handleCancelHide() {
     setPendingHideTarget(null);
+    setHideFlow('list');
+  }
+
+  function handleToggleHiddenReveal() {
+    if (hiddenListRevealed) {
+      // 다시 숨기는 방향은 안전하므로 문구 입력 없이 즉시 접는다.
+      setHiddenListRevealed(false);
+      return;
+    }
+    setHideConfirmText('');
+    setHideFlow('confirmReveal');
+  }
+
+  function handleConfirmReveal() {
+    if (hideConfirmText.trim() !== REVEAL_GUIDE_PHRASE) return;
+    setHiddenListRevealed(true);
+    setHideFlow('list');
+  }
+
+  function handleCancelReveal() {
+    setHideFlow('list');
+  }
+
+  function handleRequestUnhide(stock: HiddenStock) {
+    setPendingUnhideTarget(stock);
+    setHideConfirmText('');
+    setHideFlow('confirmUnhide');
+  }
+
+  function handleConfirmUnhide() {
+    if (hideConfirmText.trim() !== UNHIDE_GUIDE_PHRASE) return;
+    if (pendingUnhideTarget) {
+      const target = pendingUnhideTarget;
+      setHiddenStocks((prev) => prev.filter((s) => s.id !== target.id));
+    }
+    setPendingUnhideTarget(null);
+    setHideFlow('list');
+  }
+
+  function handleCancelUnhide() {
+    setPendingUnhideTarget(null);
     setHideFlow('list');
   }
 
@@ -323,7 +407,10 @@ export default function AccountPage() {
           {subTab === '숨기기' && hideFlow === 'list' && (
             <HideListScreen
               hiddenStocks={hiddenStocks}
-              onStartHide={() => handleStartHide('새 숨김 대상 종목')}
+              revealed={hiddenListRevealed}
+              onToggleReveal={handleToggleHiddenReveal}
+              onUnhide={handleRequestUnhide}
+              loading={isLoadingHiddenStocks}
             />
           )}
           {subTab === '숨기기' && hideFlow === 'confirm' && (
@@ -334,6 +421,26 @@ export default function AccountPage() {
               onChange={setHideConfirmText}
               onCancel={handleCancelHide}
               onConfirm={handleConfirmHide}
+            />
+          )}
+          {subTab === '숨기기' && hideFlow === 'confirmReveal' && (
+            <HideConfirmScreen
+              targetName={null}
+              guidePhrase={REVEAL_GUIDE_PHRASE}
+              value={hideConfirmText}
+              onChange={setHideConfirmText}
+              onCancel={handleCancelReveal}
+              onConfirm={handleConfirmReveal}
+            />
+          )}
+          {subTab === '숨기기' && hideFlow === 'confirmUnhide' && (
+            <HideConfirmScreen
+              targetName={pendingUnhideTarget?.name ?? null}
+              guidePhrase={UNHIDE_GUIDE_PHRASE}
+              value={hideConfirmText}
+              onChange={setHideConfirmText}
+              onCancel={handleCancelUnhide}
+              onConfirm={handleConfirmUnhide}
             />
           )}
         </Box>

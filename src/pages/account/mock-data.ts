@@ -1,17 +1,6 @@
-import type {
-  AccountRow,
-  HiddenStock,
-  HoldingStock,
-} from '../../types/account';
+import type { HiddenStock, HoldingStock } from '../../types/account';
 
 /** 실제 서비스 연동 전까지 사용하는 더미 데이터 (my-react-ts 프로토타입에서 이식). */
-
-export const ACCOUNTS: AccountRow[] = [
-  { id: 'acc-1', bankName: '저축예금 · 신한은행', amount: 10445681 },
-  { id: 'acc-2', bankName: '저축예금', amount: 10445681 },
-  { id: 'acc-3', bankName: '저축예금', amount: 10445681 },
-  { id: 'acc-4', bankName: '저축예금', amount: 10445681 },
-];
 
 export const HOLDING_STOCKS: HoldingStock[] = [
   { id: 'h1', name: 'SK하이닉스', amount: 5500000, changePct: 30 },
