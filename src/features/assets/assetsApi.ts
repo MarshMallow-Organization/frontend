@@ -25,12 +25,15 @@ export async function createVirtualAccount(
 ): Promise<VirtualAccount> {
   if (USE_ASSETS_MOCK) {
     mockVirtualAccountSeq += 1;
-    return Promise.resolve({
+    const account: VirtualAccount = {
       id: mockVirtualAccountSeq,
       name,
       sortOrder: mockVirtualAccountSeq,
       createdAt: new Date().toISOString(),
-    });
+    };
+    // 목록에 실제로 반영해야 다른 화면(홈 화면 등)에서 다시 조회했을 때 보인다.
+    MOCK_VIRTUAL_ACCOUNTS.push(account);
+    return Promise.resolve(account);
   }
   return apiFetch<VirtualAccount>(VIRTUAL_ACCOUNTS_PATH, {
     method: 'POST',
@@ -127,6 +130,8 @@ export async function renameVirtualAccount(
   name: string,
 ): Promise<VirtualAccountNameUpdate> {
   if (USE_ASSETS_MOCK) {
+    const account = MOCK_VIRTUAL_ACCOUNTS.find((a) => a.id === portfolioId);
+    if (account) account.name = name;
     return Promise.resolve({
       id: portfolioId,
       name,
@@ -156,10 +161,45 @@ export async function deleteVirtualAccount(
   portfolioId: number,
 ): Promise<VirtualAccountDeleted> {
   if (USE_ASSETS_MOCK) {
+    const index = MOCK_VIRTUAL_ACCOUNTS.findIndex((a) => a.id === portfolioId);
+    if (index !== -1) MOCK_VIRTUAL_ACCOUNTS.splice(index, 1);
     return Promise.resolve({ id: portfolioId, deleted: true });
   }
   return apiFetch<VirtualAccountDeleted>(
     `${VIRTUAL_ACCOUNTS_PATH}/${portfolioId}`,
     { method: 'DELETE' },
   );
+}
+
+/**
+ * 홈 화면 "자산 현황" 카드용 — 가상계좌 4개 각각의 총자산(보유 종목 평가금액 합)과
+ * 트리맵에 쓸 보유 종목 원본. 백엔드가 계좌별 총자산을 한 번에 내려주는 API가 없어,
+ * 목록 조회 후 계좌마다 상세 조회(getVirtualAccountDetail)를 병렬로 호출해
+ * holdings.evaluationAmount를 프런트에서 합산한다.
+ */
+export interface VirtualAccountAssetSummary {
+  id: number;
+  name: string;
+  totalAsset: number;
+  holdings: VirtualAccountHolding[];
+}
+
+export async function getVirtualAccountAssetSummaries(): Promise<
+  VirtualAccountAssetSummary[]
+> {
+  const { portfolios } = await getVirtualAccounts();
+  // sortOrder 순으로 정렬해 "1계좌"~"4계좌" 위치가 항상 같은 계좌를 가리키게 한다.
+  const sorted = [...portfolios].sort((a, b) => a.sortOrder - b.sortOrder);
+  const details = await Promise.all(
+    sorted.map((portfolio) => getVirtualAccountDetail(portfolio.id)),
+  );
+  return details.map((detail) => ({
+    id: detail.id,
+    name: detail.name,
+    totalAsset: detail.holdings.reduce(
+      (sum, holding) => sum + holding.evaluationAmount,
+      0,
+    ),
+    holdings: detail.holdings,
+  }));
 }
